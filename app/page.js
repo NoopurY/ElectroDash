@@ -1,6 +1,40 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
+  const [shouldRenderLanding, setShouldRenderLanding] = useState(false);
+
+  // On first load of "/", if a logged-in user exists in localStorage,
+  // immediately redirect them to their role-specific area.
+  useEffect(() => {
+    try {
+      const token =
+        typeof window !== "undefined" && localStorage.getItem("token");
+      const raw = typeof window !== "undefined" && localStorage.getItem("user");
+      const user = raw ? JSON.parse(raw) : null;
+
+      const roleToPath = {
+        admin: "/admin",
+        delivery: "/delivery",
+        user: "/user",
+      };
+
+      if (token && user?.role && roleToPath[user.role]) {
+        router.replace(roleToPath[user.role]);
+        return; // Do not render landing while redirecting
+      }
+    } catch (e) {
+      // If parsing fails, fall back to showing landing
+    }
+    setShouldRenderLanding(true);
+  }, [router]);
+
+  if (!shouldRenderLanding) return null;
+
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center"
