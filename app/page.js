@@ -41,18 +41,27 @@ export default function Home() {
       style={{ backgroundColor: "#EAF2FF" }}
     >
       <div className="text-center max-w-2xl px-4">
-        <h1 className="text-5xl font-bold mb-4" style={{ color: "#5A8DEE" }}>
-          Components in Minutes
+        <h1
+          className="text-6xl font-extrabold mb-4 bg-clip-text text-transparent"
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, #012A6B 0%, #023E8A 30%, #2B6CEA 65%, #7FB1FF 100%)",
+            backgroundSize: "200% auto",
+            backgroundPosition: "center",
+            textShadow: "0 6px 18px rgba(2,62,138,0.18)",
+          }}
+        >
+          ElectroDash
         </h1>
         <p className="text-xl mb-8" style={{ color: "#6B6B6B" }}>
-          Get your components delivered fast and fresh
+          Get your components before your souldering iron cools!
         </p>
 
         <div className="flex gap-4 justify-center flex-wrap">
           <Link
             href="/login"
             className="px-8 py-3 rounded-lg font-medium text-white hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: "#40E0D0" }}
+            style={{ backgroundColor: "#023E8A" }}
           >
             Login
           </Link>

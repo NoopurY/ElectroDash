@@ -30,7 +30,7 @@ export default function DeliveryPartnerPage() {
       id: "ORD001",
       customer: "Rajesh Kumar",
       items: "5x Resistors, 2x Transistors",
-      pickup: "Gada Electronics, Shop 19, Lamantan Road",
+  pickup: "Gada Electronics, Shop 19, Lamington Road",
       dropoff: "VIT, Sangam Nagar, Wadala (Raj)",
       pickupCoords: [23.8103, 91.2925],
       dropoffCoords: [23.8203, 91.3025],
@@ -43,7 +43,7 @@ export default function DeliveryPartnerPage() {
       id: "ORD002",
       customer: "Priya Sharma",
       items: "1x Arduino Uno, 3x LEDs",
-      pickup: "Raju Electronics, Shop 29, Lamantan Road",
+  pickup: "Raju Electronics, Shop 29, Lamington Road",
       dropoff: "Tech Park, Sector 5, Udaipur",
       pickupCoords: [23.815, 91.2975],
       dropoffCoords: [23.825, 91.3075],
@@ -56,7 +56,7 @@ export default function DeliveryPartnerPage() {
       id: "ORD003",
       customer: "Amit Patel",
       items: "2x Capacitors, 1x Breadboard",
-      pickup: "Nagraj Electronics, Shop 12, Lamantan Road",
+  pickup: "Nagraj Electronics, Shop 12, Lamington Road",
       dropoff: "Engineering College, Udaipur",
       pickupCoords: [23.808, 91.29],
       dropoffCoords: [23.818, 91.3],
@@ -178,7 +178,8 @@ export default function DeliveryPartnerPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-lg font-semibold flex items-center gap-2">
-              ⚡ Bolt Delivery
+              <img src="/ElectroDash.png" alt="ElectroDash" className="w-6 h-6" />
+              ElectroDash Delivery
             </h1>
             <p className="text-sm opacity-90">Delivery Partner Mode</p>
             <p className="text-xs opacity-80">Online • Ready for deliveries</p>

@@ -85,36 +85,35 @@ export default function SignupPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center"
+      className="min-h-screen flex items-center justify-center px-4"
       style={{ backgroundColor: "#EAF2FF" }}
     >
       <div
-        className="w-full max-w-md p-8 rounded-lg"
+        className="w-full max-w-sm p-6 rounded-xl"
         style={{
           backgroundColor: "#FFFFFF",
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
+          maxHeight: "90vh",
+          overflowY: "auto",
         }}
       >
         <h1
-          className="text-3xl font-bold text-center mb-2"
+          className="text-2xl font-bold text-center mb-1"
           style={{ color: "#5A8DEE" }}
         >
           Create Account
         </h1>
-        <p className="text-center mb-6" style={{ color: "#6B6B6B" }}>
-          Sign up to get started
-        </p>
 
         {error && (
           <div
-            className="mb-4 p-3 rounded"
+            className="mb-3 p-2 rounded text-sm"
             style={{ backgroundColor: "#FFE5DD", color: "#FF6B35" }}
           >
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+  <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label
               htmlFor="name"
@@ -130,7 +129,7 @@ export default function SignupPage() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded border outline-none focus:ring-2"
+              className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
               style={{
                 borderColor: "#DADADA",
                 color: "#212121",
@@ -155,7 +154,7 @@ export default function SignupPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded border outline-none focus:ring-2"
+              className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
               style={{
                 borderColor: "#DADADA",
                 color: "#212121",
@@ -179,7 +178,7 @@ export default function SignupPage() {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded border outline-none focus:ring-2"
+              className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
               style={{
                 borderColor: "#DADADA",
                 color: "#212121",
@@ -203,7 +202,7 @@ export default function SignupPage() {
               value={formData.role}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded border outline-none focus:ring-2"
+              className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
               style={{
                 borderColor: "#DADADA",
                 color: "#212121",
@@ -232,7 +231,7 @@ export default function SignupPage() {
               value={formData.password}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded border outline-none focus:ring-2"
+              className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
               style={{
                 borderColor: "#DADADA",
                 color: "#212121",
@@ -270,14 +269,14 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 rounded font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="w-full py-2 px-4 rounded font-md text-white hover:pointer hover:text-blue-950 disabled:opacity-10 text-md"
             style={{ backgroundColor: "#40E0D0" }}
           >
             {loading ? "Creating Account..." : "Sign Up"}
           </button>
         </form>
 
-        <p className="mt-6 text-center" style={{ color: "#6B6B6B" }}>
+        <p className="mt-4 text-center text-sm" style={{ color: "#6B6B6B" }}>
           Already have an account?{" "}
           <Link
             href="/login"

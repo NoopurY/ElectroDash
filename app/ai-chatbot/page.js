@@ -54,7 +54,8 @@ export default function AIChatbotPage() {
         <div className="flex justify-between items-center w-full max-w-xl mx-auto">
           <div>
             <h1 className="text-lg font-semibold flex items-center gap-2">
-              ⚡ Bolt
+              <img src="/ElectroDash.png" alt="ElectroDash" className="w-6 h-6" />
+              ElectroDash
             </h1>
             <p className="text-sm opacity-90">AI Chatbot</p>
             <p className="text-xs opacity-80">Ask about hardware components</p>

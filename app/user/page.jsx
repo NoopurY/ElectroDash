@@ -179,7 +179,7 @@ export default function Page() {
     {
       id: 1,
       name: "109 kΩ ±1% Resistor",
-      image: "https://cdn-icons-png.flaticon.com/512/2927/2927948.png",
+      image: "/resistors.png",
       specs: "1/4W, 1% Tolerance, Through-Hole",
       time: "20 mins",
       price: 24,
@@ -188,7 +188,7 @@ export default function Page() {
     {
       id: 2,
       name: "220 kΩ ±1% Resistor",
-      image: "https://cdn-icons-png.flaticon.com/512/2927/2927948.png",
+      image: "/resistors.png",
       specs: "1/4W, 1% Tolerance, Through-Hole",
       time: "20 mins",
       price: 24,
@@ -197,7 +197,7 @@ export default function Page() {
     {
       id: 3,
       name: "BC547 Transistor",
-      image: "https://cdn-icons-png.flaticon.com/512/2991/2991109.png",
+      image: "/transistors.png",
       specs: "NPN, 45V, 100mA",
       time: "20 mins",
       price: 15,
@@ -206,7 +206,7 @@ export default function Page() {
     {
       id: 4,
       name: "Arduino Uno Board",
-      image: "https://cdn-icons-png.flaticon.com/512/2521/2521673.png",
+      image: "/arduino.png",
       specs: "ATmega328P, USB Interface",
       time: "25 mins",
       price: 450,
@@ -228,7 +228,8 @@ export default function Page() {
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-lg font-semibold flex items-center gap-2">
-                  ⚡ Bolt
+                  <img src="/ElectroDash.png" alt="ElectroDash" className="w-6 h-6" />
+                  ElectroDash
                 </h1>
                 <p className="text-sm opacity-90">23 minutes</p>
                 <p className="text-xs opacity-80">
@@ -263,14 +264,14 @@ export default function Page() {
               onClick={handlePhotoUploadClick}
             >
               <Upload className="text-[#5A8DEE]" size={24} />
-              <span className="text-xs mt-2 font-medium text-gray-700 text-center">
+              <span className="text-xs mt-2 font-medium text-gray-700 text-center hover:pointer">
                 Upload Photos
               </span>
             </button>
 
             <button className="bg-white shadow-md p-4 rounded-2xl flex flex-col items-center w-24 hover:scale-105 transition">
               <FileText className="text-[#5A8DEE]" size={24} />
-              <span className="text-xs mt-2 font-medium text-gray-700 text-center">
+              <span className="text-xs mt-2 font-medium text-gray-700 text-center hover:pointer">
                 Upload List
               </span>
             </button>
@@ -280,7 +281,7 @@ export default function Page() {
               onClick={() => router.push("/ai-chatbot")}
             >
               <Bot className="text-[#5A8DEE]" size={24} />
-              <span className="text-xs mt-2 font-medium text-gray-700 text-center">
+              <span className="text-xs mt-2 font-medium text-gray-700 text-center hover:pointer">
                 AI Chatbot
               </span>
             </button>
@@ -294,25 +295,25 @@ export default function Page() {
             <div className="flex justify-start gap-4 overflow-x-auto">
               <div className="bg-[#D9F3F0] rounded-2xl shadow-md px-4 py-3 min-w-[100px] flex flex-col items-center">
                 <img
-                  src="https://cdn-icons-png.flaticon.com/512/2927/2927948.png"
+                  src="/resistors.png"
                   alt="Resistor"
-                  className="w-10 h-10"
+                  className="w-15 h-15 rounded-xl"
                 />
                 <span className="text-sm font-medium mt-2">Resistors</span>
               </div>
               <div className="bg-[#D9F3F0] rounded-2xl shadow-md px-4 py-3 min-w-[100px] flex flex-col items-center">
                 <img
-                  src="https://cdn-icons-png.flaticon.com/512/2991/2991109.png"
+                  src="/transistors.png"
                   alt="Transistor"
-                  className="w-10 h-10"
+                  className="w-15 h-15 rounded-xl"
                 />
                 <span className="text-sm font-medium mt-2">Transistors</span>
               </div>
               <div className="bg-[#D9F3F0] rounded-2xl shadow-md px-4 py-3 min-w-[100px] flex flex-col items-center">
                 <img
-                  src="https://cdn-icons-png.flaticon.com/512/2521/2521673.png"
+                  src="/arduino.png"
                   alt="Boards"
-                  className="w-10 h-10"
+                  className="w-15 h-15 rounded-xl"
                 />
                 <span className="text-sm font-medium mt-2">Boards</span>
               </div>
@@ -329,17 +330,17 @@ export default function Page() {
                 {
                   name: "Gada Electronics",
                   time: "23 mins",
-                  addr: "Shop no. 19, Lamantan Road",
+                  addr: "Shop no. 19, Lamington Road",
                 },
                 {
                   name: "Raju Electronics",
                   time: "23 mins",
-                  addr: "Shop no. 29, Lamantan Road",
+                  addr: "Shop no. 29, Lamington Road",
                 },
                 {
                   name: "Nagraj Electronics",
                   time: "28 mins",
-                  addr: "Shop no. 12, Lamantan Road",
+                  addr: "Shop no. 12, Lamington Road",
                 },
               ].map((shop, i) => (
                 <div
@@ -413,7 +414,7 @@ export default function Page() {
                 onClick={() => setSelectedCategory("Resistor")}
               >
                 <img
-                  src="https://cdn-icons-png.flaticon.com/512/2927/2927948.png"
+                  src="/resistors.png"
                   alt="Resistor"
                   className="w-12 h-12"
                 />
@@ -428,7 +429,7 @@ export default function Page() {
                 onClick={() => setSelectedCategory("Transistors")}
               >
                 <img
-                  src="https://cdn-icons-png.flaticon.com/512/2991/2991109.png"
+                  src="/transistors.png"
                   alt="Transistor"
                   className="w-12 h-12"
                 />
