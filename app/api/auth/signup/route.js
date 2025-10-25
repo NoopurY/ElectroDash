@@ -4,7 +4,7 @@ import { createUser, generateToken, isValidRole } from "@/lib/auth";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, password, role, name, phone } = body;
+    const { email, password, role, name, phone, shopName, shopAddress, vehicleType } = body;
 
     // Validation
     if (!email || !password || !role) {
@@ -28,8 +28,30 @@ export async function POST(request) {
       );
     }
 
-    // Create user
-    const user = await createUser(email, password, role, { name, phone });
+    // Additional validation for admin role
+    if (role === "admin" && !shopName) {
+      return NextResponse.json(
+        { error: "Shop name is required for vendors" },
+        { status: 400 }
+      );
+    }
+
+    // Additional validation for delivery role
+    if (role === "delivery" && !vehicleType) {
+      return NextResponse.json(
+        { error: "Vehicle type is required for delivery partners" },
+        { status: 400 }
+      );
+    }
+
+    // Create user with additional fields
+    const user = await createUser(email, password, role, { 
+      name, 
+      phone, 
+      shopName, 
+      shopAddress,
+      vehicleType 
+    });
 
     // Generate token
     const token = generateToken(user);

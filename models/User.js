@@ -7,6 +7,13 @@ const UserSchema = new mongoose.Schema(
     role: { type: String, enum: ["user", "admin", "delivery"], required: true },
     name: { type: String },
     phone: { type: String },
+    // Vendor/Admin specific fields
+    shopName: { type: String },
+    shopAddress: { type: String },
+    deliveryRadius: { type: Number, default: 5 }, // in km
+    // Delivery partner specific fields
+    vehicleType: { type: String },
+    isAvailable: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

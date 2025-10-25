@@ -18,6 +18,9 @@ import {
   Clock,
   ShoppingCart,
   ArrowLeft,
+  Plus,
+  Minus,
+  Heart,
 } from "lucide-react";
 
 export default function Page() {
@@ -31,6 +34,8 @@ export default function Page() {
   const [selectedShop, setSelectedShop] = useState(null);
   const [cart, setCart] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("Resistor");
+  const [productQuantities, setProductQuantities] = useState({});
+  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
     // Check authentication and role
@@ -52,7 +57,42 @@ export default function Page() {
       }
       return;
     }
+
+    // Load cart from localStorage
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) {
+      setCart(JSON.parse(savedCart));
+    }
+
+    // Load favorites from localStorage
+    const savedFavorites = localStorage.getItem("favorites");
+    if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites));
+    }
   }, [router]);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    if (cart.length > 0) {
+      localStorage.setItem("cart", JSON.stringify(cart));
+    } else {
+      localStorage.removeItem("cart");
+    }
+  }, [cart]);
+
+  // Sync productQuantities with cart when shop changes
+  useEffect(() => {
+    if (!selectedShop) return;
+
+    const newQuantities = {};
+    cart.forEach((item) => {
+      if (item.shopName === selectedShop.name) {
+        const key = `${item.id}_${item.shopName}`;
+        newQuantities[key] = item.quantity;
+      }
+    });
+    setProductQuantities(newQuantities);
+  }, [selectedShop, cart]);
 
   // Profile icon click handler
   const handleProfileClick = () => {
@@ -158,20 +198,163 @@ export default function Page() {
     setSelectedShop(null);
   };
 
-  // Handle add to cart
-  const handleAddToCart = (product) => {
-    const existingItem = cart.find((item) => item.id === product.id);
+  // Get quantity for a product in current shop
+  const getProductQuantity = (productId) => {
+    const key = `${productId}_${selectedShop?.name || "unknown"}`;
+    return productQuantities[key] || 0;
+  };
+
+  // Increase product quantity and add to cart
+  const increaseQuantity = (productId) => {
+    const key = `${productId}_${selectedShop?.name || "unknown"}`;
+    const newQuantity = (productQuantities[key] || 0) + 1;
+    setProductQuantities((prev) => ({
+      ...prev,
+      [key]: newQuantity,
+    }));
+
+    // Find the product to add to cart
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+
+    const existingItem = cart.find(
+      (item) => item.id === productId && item.shopName === selectedShop?.name
+    );
     if (existingItem) {
       setCart(
         cart.map((item) =>
-          item.id === product.id
+          item.id === productId && item.shopName === selectedShop?.name
             ? { ...item, quantity: item.quantity + 1 }
             : item
         )
       );
     } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
+      setCart([
+        ...cart,
+        { ...product, quantity: 1, shopName: selectedShop?.name || "Unknown Shop" },
+      ]);
     }
+  };
+
+  // Decrease product quantity and update cart
+  const decreaseQuantity = (productId) => {
+    const key = `${productId}_${selectedShop?.name || "unknown"}`;
+    const currentQuantity = productQuantities[key] || 0;
+    if (currentQuantity === 0) return;
+
+    const newQuantity = currentQuantity - 1;
+    setProductQuantities((prev) => ({
+      ...prev,
+      [key]: newQuantity,
+    }));
+
+    // Update cart - decrease by 1 or remove if quantity becomes 0
+    const existingItem = cart.find(
+      (item) => item.id === productId && item.shopName === selectedShop?.name
+    );
+    if (existingItem) {
+      if (existingItem.quantity > 1) {
+        setCart(
+          cart.map((item) =>
+            item.id === productId && item.shopName === selectedShop?.name
+              ? { ...item, quantity: item.quantity - 1 }
+              : item
+          )
+        );
+      } else {
+        // Remove from cart if quantity becomes 0
+        setCart(
+          cart.filter(
+            (item) => !(item.id === productId && item.shopName === selectedShop?.name)
+          )
+        );
+      }
+    }
+  };
+
+  // Handle add to cart - adds current quantity to cart
+  const handleAddToCart = (product) => {
+    const quantity = getProductQuantity(product.id);
+    if (quantity === 0) {
+      // If quantity is 0, just increase it by 1 (same as clicking +)
+      increaseQuantity(product.id);
+      return;
+    }
+
+    const existingItem = cart.find(
+      (item) => item.id === product.id && item.shopName === selectedShop?.name
+    );
+    if (existingItem) {
+      setCart(
+        cart.map((item) =>
+          item.id === product.id && item.shopName === selectedShop?.name
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        )
+      );
+    } else {
+      setCart([
+        ...cart,
+        { ...product, quantity, shopName: selectedShop?.name || "Unknown Shop" },
+      ]);
+    }
+
+    // Reset the product quantity after adding to cart
+    setProductQuantities((prev) => ({
+      ...prev,
+      [product.id]: 0,
+    }));
+  };
+
+  // Reset quantity to 0 and remove from cart
+  const resetQuantity = (productId) => {
+    const key = `${productId}_${selectedShop?.name || "unknown"}`;
+    setProductQuantities((prev) => ({
+      ...prev,
+      [key]: 0,
+    }));
+
+    // Remove from cart
+    setCart(
+      cart.filter(
+        (item) => !(item.id === productId && item.shopName === selectedShop?.name)
+      )
+    );
+  };
+
+  // Handle cart click - navigate to cart page
+  const handleCartClick = () => {
+    router.push("/user/cart");
+  };
+
+  // Check if product is favorited
+  const isFavorite = (productId) => {
+    return favorites.some(fav => fav.id === productId && fav.shopName === selectedShop?.name);
+  };
+
+  // Toggle favorite
+  const toggleFavorite = (product) => {
+    const productWithShop = {
+      ...product,
+      shopName: selectedShop?.name,
+      image: product.image
+    };
+    
+    const isFav = isFavorite(product.id);
+    
+    let updatedFavorites;
+    if (isFav) {
+      // Remove from favorites
+      updatedFavorites = favorites.filter(
+        fav => !(fav.id === product.id && fav.shopName === selectedShop?.name)
+      );
+    } else {
+      // Add to favorites
+      updatedFavorites = [...favorites, productWithShop];
+    }
+    
+    setFavorites(updatedFavorites);
+    localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
   };
 
   // Mock products data
@@ -375,10 +558,13 @@ export default function Page() {
               <h1 className="text-lg font-semibold">{selectedShop?.name}</h1>
               <p className="text-xs opacity-80">{selectedShop?.addr}</p>
             </div>
-            <div className="ml-auto relative">
+            <div
+              className="ml-auto relative cursor-pointer hover:bg-white/20 rounded-full p-2 transition"
+              onClick={handleCartClick}
+            >
               <ShoppingCart size={24} />
               {cart.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                   {cart.length}
                 </span>
               )}
@@ -469,8 +655,20 @@ export default function Page() {
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-md hover:shadow-xl transition"
+                  className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-md hover:shadow-xl transition relative"
                 >
+                  {/* Favorite Heart Icon */}
+                  <button
+                    onClick={() => toggleFavorite(product)}
+                    className="absolute top-3 right-3 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition z-10"
+                  >
+                    <Heart
+                      size={18}
+                      className={isFavorite(product.id) ? "text-red-500" : "text-gray-400"}
+                      fill={isFavorite(product.id) ? "currentColor" : "none"}
+                    />
+                  </button>
+
                   <img
                     src={product.image}
                     alt={product.name}
@@ -484,16 +682,39 @@ export default function Page() {
                     <Clock size={14} />
                     <span>{product.time}</span>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-[#5A8DEE] font-bold text-lg">
                       ₹{product.price}
                     </span>
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="bg-[#7FFF00] text-black font-bold px-4 py-2 rounded-lg hover:bg-[#6FEF00] transition text-sm"
-                    >
-                      ADD
-                    </button>
+                  </div>
+                  {/* Quantity Controls */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 border-2 border-gray-300 rounded-lg p-1">
+                      <button
+                        onClick={() => decreaseQuantity(product.id)}
+                        className="bg-gray-200 hover:bg-gray-300 rounded p-1 transition"
+                        disabled={getProductQuantity(product.id) === 0}
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <span className="font-semibold text-lg w-8 text-center">
+                        {getProductQuantity(product.id)}
+                      </span>
+                      <button
+                        onClick={() => increaseQuantity(product.id)}
+                        className="bg-[#5A8DEE] hover:bg-[#4A7DDE] text-white rounded p-1 transition"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                    {getProductQuantity(product.id) > 0 && (
+                      <button
+                        onClick={() => resetQuantity(product.id)}
+                        className="bg-red-500 text-white font-bold px-3 py-2 rounded-lg hover:bg-red-600 transition text-sm"
+                      >
+                        RESET
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

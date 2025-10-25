@@ -13,6 +13,9 @@ export default function SignupPage() {
     confirmPassword: "",
     phone: "",
     role: "user",
+    shopName: "",
+    shopAddress: "",
+    vehicleType: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,6 +58,9 @@ export default function SignupPage() {
           password: formData.password,
           phone: formData.phone,
           role: formData.role,
+          shopName: formData.shopName,
+          shopAddress: formData.shopAddress,
+          vehicleType: formData.vehicleType,
         }),
       });
 
@@ -212,9 +218,97 @@ export default function SignupPage() {
             >
               <option value="user">Customer</option>
               <option value="delivery">Delivery Partner</option>
-              <option value="admin">Admin</option>
+              <option value="admin">Vendor/Shop Owner</option>
             </select>
           </div>
+
+          {/* Conditional fields for Vendor */}
+          {formData.role === "admin" && (
+            <>
+              <div>
+                <label
+                  htmlFor="shopName"
+                  className="block mb-2 font-medium"
+                  style={{ color: "#212121" }}
+                >
+                  Shop Name *
+                </label>
+                <input
+                  type="text"
+                  id="shopName"
+                  name="shopName"
+                  value={formData.shopName}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g., Gada Electronics"
+                  className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
+                  style={{
+                    borderColor: "#DADADA",
+                    color: "#212121",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
+                  onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="shopAddress"
+                  className="block mb-2 font-medium"
+                  style={{ color: "#212121" }}
+                >
+                  Shop Address
+                </label>
+                <textarea
+                  id="shopAddress"
+                  name="shopAddress"
+                  value={formData.shopAddress}
+                  onChange={handleChange}
+                  rows="2"
+                  placeholder="Full shop address"
+                  className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
+                  style={{
+                    borderColor: "#DADADA",
+                    color: "#212121",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
+                  onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Conditional fields for Delivery Partner */}
+          {formData.role === "delivery" && (
+            <div>
+              <label
+                htmlFor="vehicleType"
+                className="block mb-2 font-medium"
+                style={{ color: "#212121" }}
+              >
+                Vehicle Type *
+              </label>
+              <select
+                id="vehicleType"
+                name="vehicleType"
+                value={formData.vehicleType}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
+                style={{
+                  borderColor: "#DADADA",
+                  color: "#212121",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
+                onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
+              >
+                <option value="">Select Vehicle</option>
+                <option value="Bike">Bike</option>
+                <option value="Scooter">Scooter</option>
+                <option value="Bicycle">Bicycle</option>
+                <option value="Car">Car</option>
+              </select>
+            </div>
+          )}
 
           <div>
             <label
