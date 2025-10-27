@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { 
-  Search, 
-  User, 
-  Send, 
-  Trash2, 
-  Copy, 
+import {
+  Search,
+  User,
+  Send,
+  Trash2,
+  Copy,
   Check,
   Sparkles,
   Zap,
@@ -58,9 +58,9 @@ export default function AIChatbotPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
-    
+
     setLoading(true);
-    
+
     // Add user message to chat
     const userMessage = {
       sender: "user",
@@ -68,10 +68,10 @@ export default function AIChatbotPage() {
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMessage]);
-    
+
     const currentInput = input;
     setInput("");
-    
+
     try {
       const res = await fetch("/api/ai-chatbot", {
         method: "POST",
@@ -79,7 +79,7 @@ export default function AIChatbotPage() {
         body: JSON.stringify({ message: currentInput }),
       });
       const data = await res.json();
-      
+
       setMessages((prev) => [
         ...prev,
         { sender: "ai", text: data.result, timestamp: new Date() },
@@ -87,10 +87,10 @@ export default function AIChatbotPage() {
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { 
-          sender: "ai", 
-          text: "❌ Oops! I'm having trouble connecting right now. Please try again in a moment.", 
-          timestamp: new Date() 
+        {
+          sender: "ai",
+          text: "❌ Oops! I'm having trouble connecting right now. Please try again in a moment.",
+          timestamp: new Date(),
         },
       ]);
     }
@@ -118,11 +118,11 @@ export default function AIChatbotPage() {
   };
 
   const toggleVoiceInput = () => {
-    if (!('webkitSpeechRecognition' in window)) {
+    if (!("webkitSpeechRecognition" in window)) {
       alert("Voice input is not supported in your browser. Please try Chrome.");
       return;
     }
-    
+
     if (isListening) {
       setIsListening(false);
       // Stop recognition logic would go here
@@ -155,13 +155,21 @@ export default function AIChatbotPage() {
                 <ArrowLeft size={24} />
               </button>
               <div className="flex items-center gap-3">
-                <Image src="/ElectroDash.png" alt="ElectroDash" width={40} height={40} className="rounded-lg" />
+                <Image
+                  src="/ElectroDash.png"
+                  alt="ElectroDash"
+                  width={40}
+                  height={40}
+                  className="rounded-lg"
+                />
                 <div>
                   <h1 className="text-2xl font-bold flex items-center gap-2">
                     <Sparkles size={20} />
                     AI Assistant
                   </h1>
-                  <p className="text-white/80 text-sm">Powered by ElectroDash</p>
+                  <p className="text-white/80 text-sm">
+                    Powered by ElectroDash
+                  </p>
                 </div>
               </div>
             </div>
@@ -210,36 +218,57 @@ export default function AIChatbotPage() {
                       <Sparkles size={16} />
                     </div>
                   )}
-                  
+
                   {/* Message Content */}
                   <div className="prose prose-sm max-w-none">
                     <ReactMarkdown
                       components={{
                         ul: ({ node, ...props }) => (
-                          <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />
+                          <ul
+                            className="list-disc pl-5 mb-2 space-y-1"
+                            {...props}
+                          />
                         ),
                         li: ({ node, ...props }) => (
                           <li className="mb-1" {...props} />
                         ),
                         strong: ({ node, ...props }) => (
-                          <strong className={msg.sender === "ai" ? "text-[#5A8DEE]" : "text-white font-bold"} {...props} />
+                          <strong
+                            className={
+                              msg.sender === "ai"
+                                ? "text-[#5A8DEE]"
+                                : "text-white font-bold"
+                            }
+                            {...props}
+                          />
                         ),
                         h2: ({ node, ...props }) => (
-                          <h2 className="text-lg font-bold mt-3 mb-2" {...props} />
+                          <h2
+                            className="text-lg font-bold mt-3 mb-2"
+                            {...props}
+                          />
                         ),
                         h3: ({ node, ...props }) => (
-                          <h3 className="text-base font-semibold mt-2 mb-1" {...props} />
+                          <h3
+                            className="text-base font-semibold mt-2 mb-1"
+                            {...props}
+                          />
                         ),
                         p: ({ node, ...props }) => (
                           <p className="mb-2 leading-relaxed" {...props} />
                         ),
-                        code: ({ node, inline, ...props }) => (
+                        code: ({ node, inline, ...props }) =>
                           inline ? (
-                            <code className="bg-gray-200 px-1.5 py-0.5 rounded text-sm" {...props} />
+                            <code
+                              className="bg-gray-200 px-1.5 py-0.5 rounded text-sm"
+                              {...props}
+                            />
                           ) : (
-                            <code className="block bg-gray-800 text-white p-3 rounded-lg text-sm overflow-x-auto" {...props} />
-                          )
-                        ),
+                            <code
+                              className="block bg-gray-800 text-white p-3 rounded-lg text-sm overflow-x-auto"
+                              {...props}
+                            />
+                          ),
                       }}
                     >
                       {msg.text}
@@ -247,10 +276,18 @@ export default function AIChatbotPage() {
                   </div>
 
                   {/* Timestamp & Copy Button */}
-                  <div className={`flex items-center justify-between mt-2 pt-2 border-t ${
-                    msg.sender === "ai" ? "border-blue-200" : "border-white/30"
-                  }`}>
-                    <span className={`text-xs ${msg.sender === "ai" ? "text-gray-500" : "text-white/70"}`}>
+                  <div
+                    className={`flex items-center justify-between mt-2 pt-2 border-t ${
+                      msg.sender === "ai"
+                        ? "border-blue-200"
+                        : "border-white/30"
+                    }`}
+                  >
+                    <span
+                      className={`text-xs ${
+                        msg.sender === "ai" ? "text-gray-500" : "text-white/70"
+                      }`}
+                    >
                       {formatTime(msg.timestamp)}
                     </span>
                     {msg.sender === "ai" && (
@@ -270,23 +307,34 @@ export default function AIChatbotPage() {
                 </div>
               </div>
             ))}
-            
+
             {/* Loading Indicator */}
             {loading && (
               <div className="flex justify-start animate-fade-in">
                 <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-100 shadow-md">
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-[#5A8DEE] rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                      <div className="w-2 h-2 bg-[#5A8DEE] rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                      <div className="w-2 h-2 bg-[#5A8DEE] rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                      <div
+                        className="w-2 h-2 bg-[#5A8DEE] rounded-full animate-bounce"
+                        style={{ animationDelay: "0ms" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-[#5A8DEE] rounded-full animate-bounce"
+                        style={{ animationDelay: "150ms" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-[#5A8DEE] rounded-full animate-bounce"
+                        style={{ animationDelay: "300ms" }}
+                      ></div>
                     </div>
-                    <span className="text-sm text-gray-600">AI is thinking...</span>
+                    <span className="text-sm text-gray-600">
+                      AI is thinking...
+                    </span>
                   </div>
                 </div>
               </div>
             )}
-            
+
             <div ref={messagesEndRef} />
           </div>
         </div>
@@ -294,7 +342,9 @@ export default function AIChatbotPage() {
         {/* Quick Suggestions */}
         {messages.length === 1 && (
           <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-2 font-medium">💡 Quick suggestions:</p>
+            <p className="text-sm text-gray-600 mb-2 font-medium">
+              💡 Quick suggestions:
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {suggestions.map((suggestion, idx) => (
                 <button
@@ -302,7 +352,10 @@ export default function AIChatbotPage() {
                   onClick={() => handleSuggestionClick(suggestion)}
                   className="text-left px-4 py-3 bg-white hover:bg-blue-50 border-2 border-gray-200 hover:border-[#5A8DEE] rounded-xl transition text-sm shadow-sm group"
                 >
-                  <Zap size={14} className="inline mr-2 text-[#40E0D0] group-hover:text-[#5A8DEE]" />
+                  <Zap
+                    size={14}
+                    className="inline mr-2 text-[#40E0D0] group-hover:text-[#5A8DEE]"
+                  />
                   {suggestion}
                 </button>
               ))}
@@ -326,7 +379,9 @@ export default function AIChatbotPage() {
                 type="button"
                 onClick={toggleVoiceInput}
                 className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition ${
-                  isListening ? "text-red-500 bg-red-50" : "text-gray-400 hover:text-[#5A8DEE] hover:bg-blue-50"
+                  isListening
+                    ? "text-red-500 bg-red-50"
+                    : "text-gray-400 hover:text-[#5A8DEE] hover:bg-blue-50"
                 }`}
                 title="Voice input"
               >
@@ -351,12 +406,12 @@ export default function AIChatbotPage() {
               )}
             </button>
           </form>
-          
+
           {/* Message Count */}
           <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
             <span className="flex items-center gap-1">
               <MessageSquare size={14} />
-              {messages.length} message{messages.length !== 1 ? 's' : ''}
+              {messages.length} message{messages.length !== 1 ? "s" : ""}
             </span>
             <span>Powered by AI ✨</span>
           </div>

@@ -231,7 +231,11 @@ export default function Page() {
     } else {
       setCart([
         ...cart,
-        { ...product, quantity: 1, shopName: selectedShop?.name || "Unknown Shop" },
+        {
+          ...product,
+          quantity: 1,
+          shopName: selectedShop?.name || "Unknown Shop",
+        },
       ]);
     }
   };
@@ -265,7 +269,8 @@ export default function Page() {
         // Remove from cart if quantity becomes 0
         setCart(
           cart.filter(
-            (item) => !(item.id === productId && item.shopName === selectedShop?.name)
+            (item) =>
+              !(item.id === productId && item.shopName === selectedShop?.name)
           )
         );
       }
@@ -295,7 +300,11 @@ export default function Page() {
     } else {
       setCart([
         ...cart,
-        { ...product, quantity, shopName: selectedShop?.name || "Unknown Shop" },
+        {
+          ...product,
+          quantity,
+          shopName: selectedShop?.name || "Unknown Shop",
+        },
       ]);
     }
 
@@ -317,7 +326,8 @@ export default function Page() {
     // Remove from cart
     setCart(
       cart.filter(
-        (item) => !(item.id === productId && item.shopName === selectedShop?.name)
+        (item) =>
+          !(item.id === productId && item.shopName === selectedShop?.name)
       )
     );
   };
@@ -329,7 +339,9 @@ export default function Page() {
 
   // Check if product is favorited
   const isFavorite = (productId) => {
-    return favorites.some(fav => fav.id === productId && fav.shopName === selectedShop?.name);
+    return favorites.some(
+      (fav) => fav.id === productId && fav.shopName === selectedShop?.name
+    );
   };
 
   // Toggle favorite
@@ -337,22 +349,22 @@ export default function Page() {
     const productWithShop = {
       ...product,
       shopName: selectedShop?.name,
-      image: product.image
+      image: product.image,
     };
-    
+
     const isFav = isFavorite(product.id);
-    
+
     let updatedFavorites;
     if (isFav) {
       // Remove from favorites
       updatedFavorites = favorites.filter(
-        fav => !(fav.id === product.id && fav.shopName === selectedShop?.name)
+        (fav) => !(fav.id === product.id && fav.shopName === selectedShop?.name)
       );
     } else {
       // Add to favorites
       updatedFavorites = [...favorites, productWithShop];
     }
-    
+
     setFavorites(updatedFavorites);
     localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
   };
@@ -411,7 +423,11 @@ export default function Page() {
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-lg font-semibold flex items-center gap-2">
-                  <img src="/ElectroDash.png" alt="ElectroDash" className="w-6 h-6" />
+                  <img
+                    src="/ElectroDash.png"
+                    alt="ElectroDash"
+                    className="w-6 h-6"
+                  />
                   ElectroDash
                 </h1>
                 <p className="text-sm opacity-90">23 minutes</p>
@@ -664,7 +680,11 @@ export default function Page() {
                   >
                     <Heart
                       size={18}
-                      className={isFavorite(product.id) ? "text-red-500" : "text-gray-400"}
+                      className={
+                        isFavorite(product.id)
+                          ? "text-red-500"
+                          : "text-gray-400"
+                      }
                       fill={isFavorite(product.id) ? "currentColor" : "none"}
                     />
                   </button>
@@ -728,7 +748,7 @@ export default function Page() {
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white px-6 py-4 rounded-t-3xl flex justify-between items-center">
+            <div className="sticky top-0 bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white px-6 py-4 rounded-t-3xl flex justify-between items-center">
               <h3 className="text-xl font-bold flex items-center gap-2">
                 <Camera size={24} />
                 Upload Component Photo
@@ -746,7 +766,7 @@ export default function Page() {
               {/* Upload Area */}
               {!imagePreview ? (
                 <div
-                  className="border-3 border-dashed border-[#5A8DEE] rounded-2xl p-8 text-center bg-gradient-to-br from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 transition cursor-pointer"
+                  className="border-3 border-dashed border-[#5A8DEE] rounded-2xl p-8 text-center bg-linear-to-br from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 transition cursor-pointer"
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                   onClick={() =>
@@ -794,7 +814,7 @@ export default function Page() {
                     <button
                       onClick={handleAnalyzeImage}
                       disabled={isAnalyzing}
-                      className="w-full bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isAnalyzing ? (
                         <span className="flex items-center justify-center gap-2">
@@ -818,7 +838,7 @@ export default function Page() {
                       {detectionResult.results.map((result, idx) => (
                         <div
                           key={idx}
-                          className="bg-gradient-to-r from-green-50 to-cyan-50 rounded-xl p-4 border border-green-200"
+                          className="bg-linear-to-r from-green-50 to-cyan-50 rounded-xl p-4 border border-green-200"
                         >
                           <div className="flex justify-between items-start mb-2">
                             <div>
@@ -862,7 +882,7 @@ export default function Page() {
 
                       <button
                         onClick={handlePhotoModalClose}
-                        className="w-full bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white py-3 rounded-xl font-semibold hover:shadow-lg transition mt-4"
+                        className="w-full bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white py-3 rounded-xl font-semibold hover:shadow-lg transition mt-4"
                       >
                         Browse Shops
                       </button>
