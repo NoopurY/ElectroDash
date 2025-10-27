@@ -34,7 +34,7 @@ export default function ChangePasswordPage() {
     // Check authentication
     const token = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
-    
+
     if (!token || !userData) {
       router.push("/login");
       return;
@@ -92,7 +92,8 @@ export default function ChangePasswordPage() {
 
     // Check if new password is different from current
     if (formData.currentPassword === formData.newPassword) {
-      newErrors.newPassword = "New password must be different from current password";
+      newErrors.newPassword =
+        "New password must be different from current password";
     }
 
     setErrors(newErrors);
@@ -101,7 +102,7 @@ export default function ChangePasswordPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -116,13 +117,13 @@ export default function ChangePasswordPage() {
         ...user,
         password: formData.newPassword, // In real app, this would be hashed
       };
-      
+
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);
-      
+
       setSuccess(true);
       setLoading(false);
-      
+
       // Reset form
       setFormData({
         currentPassword: "",
@@ -139,7 +140,7 @@ export default function ChangePasswordPage() {
 
   const getPasswordStrength = (password) => {
     if (!password) return { strength: 0, label: "", color: "" };
-    
+
     let strength = 0;
     if (password.length >= 6) strength++;
     if (password.length >= 8) strength++;
@@ -148,7 +149,8 @@ export default function ChangePasswordPage() {
     if (/[^A-Za-z0-9]/.test(password)) strength++;
 
     if (strength <= 2) return { strength, label: "Weak", color: "bg-red-500" };
-    if (strength <= 3) return { strength, label: "Medium", color: "bg-yellow-500" };
+    if (strength <= 3)
+      return { strength, label: "Medium", color: "bg-yellow-500" };
     return { strength, label: "Strong", color: "bg-green-500" };
   };
 
@@ -168,7 +170,7 @@ export default function ChangePasswordPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] shadow-lg sticky top-0 z-50">
+      <header className="bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
@@ -178,10 +180,20 @@ export default function ChangePasswordPage() {
               <ArrowLeft className="text-white" size={24} />
             </button>
             <div className="flex items-center gap-3">
-              <Image src="/ElectroDash.png" alt="ElectroDash" width={40} height={40} className="rounded-lg" />
+              <Image
+                src="/ElectroDash.png"
+                alt="ElectroDash"
+                width={40}
+                height={40}
+                className="rounded-lg"
+              />
               <div>
-                <h1 className="text-2xl font-bold text-white">Change Password</h1>
-                <p className="text-white/80 text-sm">Update your account password</p>
+                <h1 className="text-2xl font-bold text-white">
+                  Change Password
+                </h1>
+                <p className="text-white/80 text-sm">
+                  Update your account password
+                </p>
               </div>
             </div>
           </div>
@@ -194,12 +206,16 @@ export default function ChangePasswordPage() {
         {success && (
           <div className="mb-6 bg-green-50 border-2 border-green-500 rounded-xl p-6 animate-fade-in">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shrink-0">
                 <CheckCircle className="text-white" size={24} />
               </div>
               <div>
-                <h3 className="font-bold text-green-800 text-lg mb-1">Password Changed Successfully!</h3>
-                <p className="text-green-600">Your password has been updated. Redirecting to profile...</p>
+                <h3 className="font-bold text-green-800 text-lg mb-1">
+                  Password Changed Successfully!
+                </h3>
+                <p className="text-green-600">
+                  Your password has been updated. Redirecting to profile...
+                </p>
               </div>
             </div>
           </div>
@@ -207,14 +223,14 @@ export default function ChangePasswordPage() {
 
         {/* Security Notice */}
         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-          <Shield className="text-blue-600 flex-shrink-0" size={24} />
+          <Shield className="text-blue-600 shrink-0" size={24} />
           <div>
             <h3 className="font-semibold text-blue-800 mb-1">Security Tips</h3>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• Use at least 8 characters</li>
               <li>• Include uppercase and lowercase letters</li>
               <li>• Add numbers and special characters</li>
-              <li>• Don't reuse old passwords</li>
+              <li>• Do not reuse old passwords</li>
             </ul>
           </div>
         </div>
@@ -232,7 +248,9 @@ export default function ChangePasswordPage() {
                 <input
                   type={showPasswords.current ? "text" : "password"}
                   value={formData.currentPassword}
-                  onChange={(e) => handleInputChange("currentPassword", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("currentPassword", e.target.value)
+                  }
                   className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none transition ${
                     errors.currentPassword
                       ? "border-red-500 focus:border-red-500"
@@ -246,7 +264,11 @@ export default function ChangePasswordPage() {
                   onClick={() => togglePasswordVisibility("current")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPasswords.current ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPasswords.current ? (
+                    <EyeOff size={20} />
+                  ) : (
+                    <Eye size={20} />
+                  )}
                 </button>
               </div>
               {errors.currentPassword && (
@@ -267,7 +289,9 @@ export default function ChangePasswordPage() {
                 <input
                   type={showPasswords.new ? "text" : "password"}
                   value={formData.newPassword}
-                  onChange={(e) => handleInputChange("newPassword", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("newPassword", e.target.value)
+                  }
                   className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none transition ${
                     errors.newPassword
                       ? "border-red-500 focus:border-red-500"
@@ -284,29 +308,37 @@ export default function ChangePasswordPage() {
                   {showPasswords.new ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-              
+
               {/* Password Strength Indicator */}
               {formData.newPassword && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-gray-600">Password Strength:</span>
-                    <span className={`text-xs font-semibold ${
-                      passwordStrength.label === "Weak" ? "text-red-500" :
-                      passwordStrength.label === "Medium" ? "text-yellow-500" :
-                      "text-green-500"
-                    }`}>
+                    <span className="text-xs font-medium text-gray-600">
+                      Password Strength:
+                    </span>
+                    <span
+                      className={`text-xs font-semibold ${
+                        passwordStrength.label === "Weak"
+                          ? "text-red-500"
+                          : passwordStrength.label === "Medium"
+                          ? "text-yellow-500"
+                          : "text-green-500"
+                      }`}
+                    >
                       {passwordStrength.label}
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full transition-all ${passwordStrength.color}`}
-                      style={{ width: `${(passwordStrength.strength / 5) * 100}%` }}
+                      style={{
+                        width: `${(passwordStrength.strength / 5) * 100}%`,
+                      }}
                     ></div>
                   </div>
                 </div>
               )}
-              
+
               {errors.newPassword && (
                 <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
                   <AlertCircle size={14} />
@@ -325,7 +357,9 @@ export default function ChangePasswordPage() {
                 <input
                   type={showPasswords.confirm ? "text" : "password"}
                   value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("confirmPassword", e.target.value)
+                  }
                   className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none transition ${
                     errors.confirmPassword
                       ? "border-red-500 focus:border-red-500"
@@ -339,7 +373,11 @@ export default function ChangePasswordPage() {
                   onClick={() => togglePasswordVisibility("confirm")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPasswords.confirm ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPasswords.confirm ? (
+                    <EyeOff size={20} />
+                  ) : (
+                    <Eye size={20} />
+                  )}
                 </button>
               </div>
               {errors.confirmPassword && (
@@ -362,7 +400,7 @@ export default function ChangePasswordPage() {
               </button>
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={success || loading}
               >
                 {loading ? (
@@ -386,8 +424,8 @@ export default function ChangePasswordPage() {
           </h3>
           <div className="space-y-2 text-sm text-gray-600">
             <p>✓ Your password is encrypted and secure</p>
-            <p>✓ We'll never share your password with anyone</p>
-            <p>✓ You'll stay logged in after changing your password</p>
+            <p>✓ We will never share your password with anyone</p>
+            <p>✓ You will stay logged in after changing your password</p>
             <p>✓ Consider using a password manager for better security</p>
           </div>
         </div>

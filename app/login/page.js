@@ -173,7 +173,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center" style={{ color: "#6B6B6B" }}>
-          Don't have an account?{" "}
+          {"Don'" + "t have an account? "}
           <Link
             href="/signup"
             className="font-medium hover:underline"

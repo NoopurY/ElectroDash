@@ -1,8 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Truck, MapPin, Phone, CheckCircle, Clock } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import {
+  ArrowLeft,
+  Truck,
+  MapPin,
+  Phone,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
 
 export default function AssignDeliveryPage() {
   const router = useRouter();
@@ -15,13 +22,42 @@ export default function AssignDeliveryPage() {
   const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
-    fetchOrderDetails();
-    fetchDeliveryPartners();
+    // Define and call async fetchers inside effect to avoid missing dependency lint warnings
+    const load = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        // Fetch order details
+        const orderRes = await fetch(`/api/orders/${orderId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (orderRes.ok) {
+          const data = await orderRes.json();
+          setOrder(data.order);
+        }
+
+        // Fetch delivery partners
+        const partnersRes = await fetch("/api/delivery-partners/available", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (partnersRes.ok) {
+          const pData = await partnersRes.json();
+          setDeliveryPartners(pData.partners || []);
+        }
+      } catch (err) {
+        console.error("Error loading assign-delivery data", err);
+        alert("Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
   }, [orderId]);
 
   const fetchOrderDetails = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const response = await fetch(`/api/orders/${orderId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -32,18 +68,18 @@ export default function AssignDeliveryPage() {
         const data = await response.json();
         setOrder(data.order);
       } else {
-        alert('Failed to fetch order details');
+        alert("Failed to fetch order details");
       }
     } catch (error) {
-      console.error('Error fetching order:', error);
-      alert('Error fetching order details');
+      console.error("Error fetching order:", error);
+      alert("Error fetching order details");
     }
   };
 
   const fetchDeliveryPartners = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/delivery-partners/available', {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/delivery-partners/available", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -53,10 +89,10 @@ export default function AssignDeliveryPage() {
         const data = await response.json();
         setDeliveryPartners(data.partners || []);
       } else {
-        console.error('Failed to fetch delivery partners');
+        console.error("Failed to fetch delivery partners");
       }
     } catch (error) {
-      console.error('Error fetching delivery partners:', error);
+      console.error("Error fetching delivery partners:", error);
     } finally {
       setLoading(false);
     }
@@ -67,11 +103,11 @@ export default function AssignDeliveryPage() {
 
     setAssigning(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const response = await fetch(`/api/orders/${orderId}/assign`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -81,15 +117,15 @@ export default function AssignDeliveryPage() {
       });
 
       if (response.ok) {
-        alert('Delivery partner assigned successfully!');
-        router.push('/admin/dashboard');
+        alert("Delivery partner assigned successfully!");
+        router.push("/admin/dashboard");
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to assign delivery partner');
+        alert(data.error || "Failed to assign delivery partner");
       }
     } catch (error) {
-      console.error('Error assigning delivery partner:', error);
-      alert('Error assigning delivery partner');
+      console.error("Error assigning delivery partner:", error);
+      alert("Error assigning delivery partner");
     } finally {
       setAssigning(false);
     }
@@ -97,7 +133,7 @@ export default function AssignDeliveryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-cyan-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5A8DEE] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -107,9 +143,9 @@ export default function AssignDeliveryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pb-20">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-cyan-50 pb-20">
       {/* Header */}
-      <header className="bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white shadow-lg sticky top-0 z-50">
+      <header className="bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
@@ -138,7 +174,7 @@ export default function AssignDeliveryPage() {
               <p className="font-semibold">{order.userName}</p>
               <p>{order.deliveryAddress.street}</p>
               <p>
-                {order.deliveryAddress.city}, {order.deliveryAddress.state}{' '}
+                {order.deliveryAddress.city}, {order.deliveryAddress.state}{" "}
                 {order.deliveryAddress.zipCode}
               </p>
               {order.deliveryAddress.phone && (
@@ -170,7 +206,9 @@ export default function AssignDeliveryPage() {
           {deliveryPartners.length === 0 ? (
             <div className="bg-white rounded-xl shadow-md p-8 text-center">
               <Truck size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 text-lg">No delivery partners available</p>
+              <p className="text-gray-600 text-lg">
+                No delivery partners available
+              </p>
               <p className="text-gray-500 text-sm mt-2">
                 Please check back later or contact delivery partners directly
               </p>
@@ -184,7 +222,7 @@ export default function AssignDeliveryPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-12 h-12 bg-gradient-to-br from-[#5A8DEE] to-[#40E0D0] rounded-full flex items-center justify-center text-white font-bold text-xl">
+                      <div className="w-12 h-12 bg-linear-to-br from-[#5A8DEE] to-[#40E0D0] rounded-full flex items-center justify-center text-white font-bold text-xl">
                         {partner.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -213,29 +251,31 @@ export default function AssignDeliveryPage() {
                           size={16}
                           className={
                             partner.isAvailable
-                              ? 'text-green-500'
-                              : 'text-gray-400'
+                              ? "text-green-500"
+                              : "text-gray-400"
                           }
                         />
                         <span
                           className={
                             partner.isAvailable
-                              ? 'text-green-600 font-semibold'
-                              : 'text-gray-500'
+                              ? "text-green-600 font-semibold"
+                              : "text-gray-500"
                           }
                         >
-                          {partner.isAvailable ? 'Available' : 'Busy'}
+                          {partner.isAvailable ? "Available" : "Busy"}
                         </span>
                       </div>
                     </div>
                   </div>
 
                   <button
-                    onClick={() => handleAssignPartner(partner._id, partner.name)}
+                    onClick={() =>
+                      handleAssignPartner(partner._id, partner.name)
+                    }
                     disabled={!partner.isAvailable || assigning}
-                    className="px-6 py-3 bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {assigning ? 'Assigning...' : 'Assign'}
+                    {assigning ? "Assigning..." : "Assign"}
                   </button>
                 </div>
               </div>
