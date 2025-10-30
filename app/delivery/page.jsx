@@ -95,6 +95,12 @@ export default function DeliveryPartnerPage() {
     }
   }, [router]);
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
+
   // Profile icon click handler
   const handleProfileClick = () => {
     router.push("/delivery/dashboard");
@@ -184,11 +190,21 @@ export default function DeliveryPartnerPage() {
             <p className="text-sm opacity-90">Delivery Partner Mode</p>
             <p className="text-xs opacity-80">Online • Ready for deliveries</p>
           </div>
-          <div
-            className="bg-white/20 p-2 rounded-full cursor-pointer"
-            onClick={handleProfileClick}
-          >
-            <User size={22} />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1 rounded font-medium text-white hover:opacity-90"
+              style={{ backgroundColor: "#40E0D0" }}
+            >
+              Logout
+            </button>
+
+            <div
+              className="bg-white/20 p-2 rounded-full cursor-pointer"
+              onClick={handleProfileClick}
+            >
+              <User size={22} />
+            </div>
           </div>
         </div>
       </header>

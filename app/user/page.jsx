@@ -33,6 +33,7 @@ export default function Page() {
   const [shopPageOpen, setShopPageOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState(null);
   const [cart, setCart] = useState([]);
+  const [shops, setShops] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("Resistor");
   const [productQuantities, setProductQuantities] = useState({});
   const [favorites, setFavorites] = useState([]);
@@ -75,6 +76,79 @@ export default function Page() {
       setFavorites(JSON.parse(savedFavorites));
     }
   }, [router]);
+
+  // Load initial shops and subscribe to real-time shop additions via SSE
+  useEffect(() => {
+    let mounted = true;
+
+    // Helper: fallback default shops
+    const defaultShops = [
+      {
+        name: "Gada Electronics",
+        time: "23 mins",
+        addr: "Shop no. 19, Lamington Road",
+        id: "seed-gada",
+      },
+      {
+        name: "Raju Electronics",
+        time: "23 mins",
+        addr: "Shop no. 29, Lamington Road",
+        id: "seed-raju",
+      },
+      {
+        name: "Nagraj Electronics",
+        time: "28 mins",
+        addr: "Shop no. 12, Lamington Road",
+        id: "seed-nagraj",
+      },
+    ];
+
+    // Fetch current shops from backend
+    fetch("/api/shops")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!mounted) return;
+        if (data?.shops) setShops(data.shops);
+        else setShops(defaultShops);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setShops(defaultShops);
+      });
+
+    // Subscribe to Server-Sent Events for live additions
+    const es = new EventSource("/api/shops/stream");
+    es.onmessage = (e) => {
+      try {
+        const d = JSON.parse(e.data);
+        // Ignore connection acknowledgements
+        if (!d || !d.name) return;
+
+        setShops((prev) => {
+          // avoid duplicates by id or name
+          if (d.id && prev.some((s) => s.id === d.id)) return prev;
+          if (!d.id && prev.some((s) => s.name === d.name)) return prev;
+          return [
+            { name: d.name, addr: d.addr || "", time: d.time || "Just now", id: d.id },
+            ...prev,
+          ];
+        });
+      } catch (err) {
+        // ignore parse errors
+      }
+    };
+
+    es.onerror = () => {
+      // If SSE fails, we'll keep the fetched list. EventSource auto-reconnects.
+    };
+
+    return () => {
+      mounted = false;
+      try {
+        es.close();
+      } catch (e) {}
+    };
+  }, []);
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
@@ -550,37 +624,25 @@ export default function Page() {
               Nearby Shops
             </h2>
             <div className="space-y-4">
-              {[
-                {
-                  name: "Gada Electronics",
-                  time: "23 mins",
-                  addr: "Shop no. 19, Lamington Road",
-                },
-                {
-                  name: "Raju Electronics",
-                  time: "23 mins",
-                  addr: "Shop no. 29, Lamington Road",
-                },
-                {
-                  name: "Nagraj Electronics",
-                  time: "28 mins",
-                  addr: "Shop no. 12, Lamington Road",
-                },
-              ].map((shop, i) => (
-                <div
-                  key={i}
-                  className="bg-white shadow-md rounded-2xl p-4 flex justify-between items-center hover:scale-[1.01] transition cursor-pointer"
-                  onClick={() => handleShopClick(shop)}
-                >
-                  <div>
-                    <p className="font-semibold text-gray-800">{shop.name}</p>
-                    <p className="text-xs text-gray-500">{shop.addr}</p>
+              {shops && shops.length > 0 ? (
+                shops.map((shop) => (
+                  <div
+                    key={shop.id || shop.name}
+                    className="bg-white shadow-md rounded-2xl p-4 flex justify-between items-center hover:scale-[1.01] transition cursor-pointer"
+                    onClick={() => handleShopClick(shop)}
+                  >
+                    <div>
+                      <p className="font-semibold text-gray-800">{shop.name}</p>
+                      <p className="text-xs text-gray-500">{shop.addr}</p>
+                    </div>
+                    <span className="bg-[#40E0D0] text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      {shop.time}
+                    </span>
                   </div>
-                  <span className="bg-[#40E0D0] text-white text-xs font-semibold px-3 py-1 rounded-full">
-                    {shop.time}
-                  </span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">No shops available</p>
+              )}
             </div>
           </section>
         </>

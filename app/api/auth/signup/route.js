@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createUser, generateToken, isValidRole } from "@/lib/auth";
+import { sendEvent } from "@/lib/sse";
 
 export async function POST(request) {
   try {
@@ -58,6 +59,16 @@ export async function POST(request) {
 
     // Return user data (without password)
     const { password: _, ...userWithoutPassword } = user;
+
+    // If an admin/vendor was created, broadcast the new shop to connected clients
+    if (role === "admin" && shopName) {
+      try {
+        sendEvent({ name: shopName, addr: shopAddress || "", time: "Just now", id: user.id });
+      } catch (err) {
+        // don't fail the signup if broadcasting fails
+        console.error("Failed to broadcast new shop:", err);
+      }
+    }
 
     return NextResponse.json(
       {
