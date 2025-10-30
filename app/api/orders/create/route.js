@@ -46,8 +46,14 @@ export async function POST(request) {
       shop: item.shopName || item.shop
     }));
 
-    // Find vendor by shop name
-    const vendor = await User.findOne({ shopName: shopName, role: "admin" });
+    // Find vendor by shop name (case-insensitive, trimmed) to avoid mismatches
+    const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const normalizedShop = (shopName || "").trim();
+    let vendor = null;
+    if (normalizedShop) {
+      const regex = new RegExp(`^${escapeRegExp(normalizedShop)}$`, "i");
+      vendor = await User.findOne({ shopName: regex, role: "admin" });
+    }
     
     // Create order
     const order = await Order.create({

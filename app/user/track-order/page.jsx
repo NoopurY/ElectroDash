@@ -295,15 +295,13 @@ export default function TrackOrderPage() {
               <h2 className="text-2xl font-bold text-gray-800">Order Status</h2>
               <p className="text-gray-600">
                 Placed{" "}
-                {new Date(order.date).toLocaleTimeString("en-US", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}{" "}
-                •{" "}
-                {new Date(order.date).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
+                {(() => {
+                  // Prefer placedAt, then createdAt, then date
+                  const dt = order.placedAt || order.createdAt || order.date;
+                  const d = dt ? new Date(dt) : null;
+                  if (!d || isNaN(d.getTime())) return "Invalid date";
+                  return ` ${d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} • ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+                })()}
               </p>
             </div>
             <div className="text-right">
