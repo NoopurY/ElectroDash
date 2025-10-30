@@ -36,6 +36,11 @@ export default function Page() {
   const [selectedCategory, setSelectedCategory] = useState("Resistor");
   const [productQuantities, setProductQuantities] = useState({});
   const [favorites, setFavorites] = useState([]);
+  const [simulationOpen, setSimulationOpen] = useState(false);
+  const [simulationProduct, setSimulationProduct] = useState(null);
+  const [simVoltage, setSimVoltage] = useState(5);
+  const [simResistance, setSimResistance] = useState(1000);
+  const [simOn, setSimOn] = useState(true);
 
   useEffect(() => {
     // Check authentication and role
@@ -335,6 +340,26 @@ export default function Page() {
   // Handle cart click - navigate to cart page
   const handleCartClick = () => {
     router.push("/user/cart");
+  };
+
+  // Open simulation modal for a product
+  const openSimulation = (product) => {
+    setSimulationProduct(product);
+    // preset values based on type
+    if (product.category === "Resistor") {
+      setSimResistance(1000);
+      setSimVoltage(5);
+    } else if (product.category === "Transistors") {
+      setSimVoltage(5);
+    } else {
+      setSimVoltage(5);
+    }
+    setSimulationOpen(true);
+  };
+
+  const closeSimulation = () => {
+    setSimulationOpen(false);
+    setSimulationProduct(null);
   };
 
   // Check if product is favorited
@@ -736,6 +761,15 @@ export default function Page() {
                       </button>
                     )}
                   </div>
+                  {/* Show Simulation Button */}
+                  <div className="mt-3">
+                    <button
+                      onClick={() => openSimulation(product)}
+                      className="w-full mt-2 border-2 border-[#5A8DEE] text-[#5A8DEE] px-3 py-2 rounded-lg font-semibold hover:bg-[#5A8DEE] hover:text-white transition text-sm"
+                    >
+                      Show Simulation
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -900,6 +934,181 @@ export default function Page() {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------- SIMULATION MODAL ---------- */}
+      {simulationOpen && simulationProduct && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">
+                Simulation: {simulationProduct.name}
+              </h3>
+              <button
+                onClick={closeSimulation}
+                className="rounded-full p-2 hover:bg-gray-100"
+              >
+                <X />
+              </button>
+            </div>
+
+            {/* Controls */}
+            <div className="mb-4 grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Voltage (V)</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={12}
+                  value={simVoltage}
+                  onChange={(e) => setSimVoltage(Number(e.target.value))}
+                  className="w-full mt-2"
+                />
+                <div className="text-sm mt-1">{simVoltage} V</div>
+              </div>
+
+              {simulationProduct.category === "Resistor" && (
+                <div>
+                  <label className="text-sm font-medium">Resistance (Ω)</label>
+                  <input
+                    type="range"
+                    min={10}
+                    max={100000}
+                    step={10}
+                    value={simResistance}
+                    onChange={(e) => setSimResistance(Number(e.target.value))}
+                    className="w-full mt-2"
+                  />
+                  <div className="text-sm mt-1">
+                    {simResistance.toLocaleString()} Ω
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Circuit switch and visualization */}
+            <div className="flex gap-6 items-start">
+              <div className="w-1/3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={simOn}
+                    onChange={(e) => setSimOn(e.target.checked)}
+                  />
+                  <span className="text-sm">Power</span>
+                </label>
+
+                <div className="mt-4 text-sm text-gray-600">
+                  <p>Category: {simulationProduct.category}</p>
+                  <p className="mt-2">
+                    Toggle power to see the effect on the component.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-1">
+                {/* Simple visual: LED that changes brightness based on voltage and resistance */}
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-full bg-gray-100 rounded-lg p-4 flex flex-col items-center">
+                    <div className="mb-3 text-sm text-gray-700">
+                      Breadboard Preview
+                    </div>
+                    <svg
+                      width="260"
+                      height="120"
+                      viewBox="0 0 260 120"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <rect
+                        x="10"
+                        y="10"
+                        width="240"
+                        height="100"
+                        rx="8"
+                        fill="#f8fafc"
+                        stroke="#e5e7eb"
+                      />
+                      {/* Power rails */}
+                      <rect
+                        x="18"
+                        y="20"
+                        width="8"
+                        height="80"
+                        fill="#fde68a"
+                      />
+                      <rect
+                        x="234"
+                        y="20"
+                        width="8"
+                        height="80"
+                        fill="#bfdbfe"
+                      />
+
+                      {/* LED simulation - a circle whose fill opacity represents brightness */}
+                      {(() => {
+                        const on = simOn;
+                        let brightness = 0;
+                        if (on) {
+                          if (simulationProduct.category === "Resistor") {
+                            // simple inverse relation to resistance
+                            const r = Math.max(1, simResistance);
+                            brightness = Math.min(
+                              1,
+                              simVoltage / (r / 1000 + simVoltage)
+                            );
+                          } else if (
+                            simulationProduct.category === "Transistors"
+                          ) {
+                            // transistor: quick on/off depending on voltage
+                            brightness = simVoltage > 1.5 ? 1 : 0.1;
+                          } else {
+                            // boards or others: show moderate indicator
+                            brightness = simVoltage > 0 ? 0.7 : 0;
+                          }
+                        } else {
+                          brightness = 0;
+                        }
+
+                        const fill = `rgba(255,99,71,${
+                          0.2 + 0.8 * brightness
+                        })`;
+                        return (
+                          <g>
+                            <circle
+                              cx="130"
+                              cy="60"
+                              r="18"
+                              fill={fill}
+                              stroke="#ef4444"
+                              strokeWidth="2"
+                            />
+                            <line
+                              x1="130"
+                              y1="78"
+                              x2="130"
+                              y2="98"
+                              stroke="#374151"
+                              strokeWidth="2"
+                            />
+                            <text
+                              x="130"
+                              y="20"
+                              fontSize="12"
+                              textAnchor="middle"
+                              fill="#374151"
+                            >
+                              LED
+                            </text>
+                          </g>
+                        );
+                      })()}
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -19,7 +19,6 @@ import {
 
 export default function TrackOrderPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
@@ -85,8 +84,9 @@ export default function TrackOrderPage() {
       return;
     }
 
-    // Get order ID from URL params
-    const orderId = searchParams.get("orderId");
+    // Get order ID from URL params (read from window.location to avoid using next/navigation hook during build)
+    const url = new URL(window.location.href);
+    const orderId = url.searchParams.get("orderId");
     if (!orderId) {
       router.push("/user/dashboard");
       return;
@@ -103,7 +103,7 @@ export default function TrackOrderPage() {
     }, 10000); // Refresh every 10 seconds
 
     return () => clearInterval(refreshInterval);
-  }, [router, searchParams]);
+  }, [router]);
 
   // Get status steps for progress tracker (Fast Delivery Flow)
   const getOrderSteps = () => {
