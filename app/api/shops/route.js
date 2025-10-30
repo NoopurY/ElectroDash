@@ -17,10 +17,12 @@ export async function GET() {
       if (!name) continue;
       if (seen.has(name)) continue;
       seen.add(name);
+      // Assign random ETA between 10 and 20 minutes for display purposes
+      const mins = Math.floor(Math.random() * (20 - 10 + 1)) + 10;
       shops.push({
         name,
         addr: a.shopAddress || "",
-        time: "23 mins",
+        time: `${mins} mins`,
         id: String(a._id),
       });
     }

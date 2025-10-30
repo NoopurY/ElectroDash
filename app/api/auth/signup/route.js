@@ -63,7 +63,9 @@ export async function POST(request) {
     // If an admin/vendor was created, broadcast the new shop to connected clients
     if (role === "admin" && shopName) {
       try {
-        sendEvent({ name: shopName, addr: shopAddress || "", time: "Just now", id: user.id });
+        // Assign a random delivery time between 10 and 20 minutes for now
+        const mins = Math.floor(Math.random() * (20 - 10 + 1)) + 10;
+        sendEvent({ name: shopName, addr: shopAddress || "", time: `${mins} mins`, id: user.id });
       } catch (err) {
         // don't fail the signup if broadcasting fails
         console.error("Failed to broadcast new shop:", err);
