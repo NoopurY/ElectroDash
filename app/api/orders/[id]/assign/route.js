@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import Order from "@/models/Order";
+import User from "@/models/User";
+import { requireAuth, forbidden, serverError } from "@/lib/apiAuth";
 
 export async function POST(request, { params }) {
+  const { user, response } = requireAuth(request, ["admin"]);
+  if (response) return response;
+
   try {
     await connectToDatabase();
+    const { id } = await params;
+    const { deliveryPartnerId } = await request.json();
 
-    const { id } = params;
-    const body = await request.json();
-    const { deliveryPartnerId, deliveryPartnerName } = body;
-
-    if (!deliveryPartnerId) {
+    if (!deliveryPartnerId || !mongoose.isValidObjectId(deliveryPartnerId)) {
       return NextResponse.json(
         { error: "Delivery partner ID is required" },
         { status: 400 }
@@ -21,12 +25,20 @@ export async function POST(request, { params }) {
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
+    if (order.vendorId !== user.id) return forbidden();
 
-    // Update order with delivery partner info
-    order.deliveryPartnerId = deliveryPartnerId;
-    order.deliveryPartnerName = deliveryPartnerName;
+    // Make sure the partner really exists, and take the name from the database
+    const partner = await User.findOne({ _id: deliveryPartnerId, role: "delivery" });
+    if (!partner) {
+      return NextResponse.json(
+        { error: "Delivery partner not found" },
+        { status: 404 }
+      );
+    }
+
+    order.deliveryPartnerId = String(partner._id);
+    order.deliveryPartnerName = partner.name || partner.email;
     order.status = "Assigned";
-    
     await order.save();
 
     return NextResponse.json(
@@ -34,10 +46,6 @@ export async function POST(request, { params }) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error assigning delivery partner:", error);
-    return NextResponse.json(
-      { error: "Internal server error", details: error.message },
-      { status: 500 }
-    );
+    return serverError("Error assigning delivery partner:", error);
   }
 }

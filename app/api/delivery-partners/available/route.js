@@ -1,23 +1,20 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
+import { requireAuth, serverError } from "@/lib/apiAuth";
 
 export async function GET(request) {
+  const { response } = requireAuth(request, ["admin"]);
+  if (response) return response;
+
   try {
     await connectToDatabase();
 
-    // Fetch all delivery partners who are available
-    const partners = await User.find({ 
-      role: "delivery",
-      isAvailable: true 
-    }).select('name email phone vehicleType isAvailable');
+    const partners = await User.find({ role: "delivery", isAvailable: true })
+      .select("name email phone vehicleType isAvailable");
 
     return NextResponse.json({ partners }, { status: 200 });
   } catch (error) {
-    console.error("Error fetching delivery partners:", error);
-    return NextResponse.json(
-      { error: "Internal server error", details: error.message },
-      { status: 500 }
-    );
+    return serverError("Error fetching delivery partners:", error);
   }
 }

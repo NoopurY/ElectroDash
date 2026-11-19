@@ -75,7 +75,10 @@ export default function AIChatbotPage() {
     try {
       const res = await fetch("/api/ai-chatbot", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
         body: JSON.stringify({ message: currentInput }),
       });
       const data = await res.json();

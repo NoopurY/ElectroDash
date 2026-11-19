@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findUserByEmail, comparePassword, generateToken } from "@/lib/auth";
+import { comparePassword, generateToken } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 
@@ -20,45 +20,25 @@ export async function POST(request) {
     await connectToDatabase();
 
     // Find user in database
-    const dbUser = await User.findOne({ email });
+    const dbUser = await User.findOne({ email: String(email).trim() });
     
-    let user;
-    if (dbUser) {
-      // User exists in database
-      const isValidPassword = await comparePassword(password, dbUser.password);
-      if (!isValidPassword) {
-        return NextResponse.json(
-          { error: "Invalid credentials" },
-          { status: 401 }
-        );
-      }
-      
-      // If delivery partner, mark as available when they login
-      if (dbUser.role === "delivery") {
-        dbUser.isAvailable = true;
-        await dbUser.save();
-      }
-      
-      user = dbUser.toObject();
-    } else {
-      // Fallback to file-based auth for backward compatibility
-      user = findUserByEmail(email);
-      if (!user) {
-        return NextResponse.json(
-          { error: "Invalid credentials" },
-          { status: 401 }
-        );
-      }
-
-      // Check password
-      const isValidPassword = await comparePassword(password, user.password);
-      if (!isValidPassword) {
-        return NextResponse.json(
-          { error: "Invalid credentials" },
-          { status: 401 }
-        );
-      }
+    if (!dbUser) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
+
+    const isValidPassword = await comparePassword(password, dbUser.password);
+    if (!isValidPassword) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    // If delivery partner, mark as available when they login
+    if (dbUser.role === "delivery") {
+      dbUser.isAvailable = true;
+      await dbUser.save();
+    }
+
+    const user = dbUser.toObject();
+    user.id = String(user._id);
 
     // Generate token
     const token = generateToken(user);

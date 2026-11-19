@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createUser, generateToken, isValidRole } from "@/lib/auth";
-import { sendEvent } from "@/lib/sse";
 
 export async function POST(request) {
   try {
@@ -37,6 +36,15 @@ export async function POST(request) {
       );
     }
 
+    // If VENDOR_SIGNUP_CODE is set, only people who know it can register a shop
+    const vendorCode = process.env.VENDOR_SIGNUP_CODE;
+    if (role === "admin" && vendorCode && body.vendorCode !== vendorCode) {
+      return NextResponse.json(
+        { error: "A valid vendor invite code is required to register a shop" },
+        { status: 403 }
+      );
+    }
+
     // Additional validation for delivery role
     if (role === "delivery" && !vehicleType) {
       return NextResponse.json(
@@ -60,17 +68,7 @@ export async function POST(request) {
     // Return user data (without password)
     const { password: _, ...userWithoutPassword } = user;
 
-    // If an admin/vendor was created, broadcast the new shop to connected clients
-    if (role === "admin" && shopName) {
-      try {
-        // Assign a random delivery time between 10 and 20 minutes for now
-        const mins = Math.floor(Math.random() * (20 - 10 + 1)) + 10;
-        sendEvent({ name: shopName, addr: shopAddress || "", time: `${mins} mins`, id: user.id });
-      } catch (err) {
-        // don't fail the signup if broadcasting fails
-        console.error("Failed to broadcast new shop:", err);
-      }
-    }
+    // New shops show up for customers through /api/shops (the user page polls it)
 
     return NextResponse.json(
       {
@@ -85,6 +83,7 @@ export async function POST(request) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
 
+    console.error("Signup error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

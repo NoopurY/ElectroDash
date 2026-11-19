@@ -100,7 +100,7 @@ export default function ChangePasswordPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -109,20 +109,26 @@ export default function ChangePasswordPage() {
 
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // In a real app, you would verify current password with backend
-      // For now, we'll just update the password
-      const updatedUser = {
-        ...user,
-        password: formData.newPassword, // In real app, this would be hashed
-      };
+    try {
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+        body: JSON.stringify({
+          currentPassword: formData.currentPassword,
+          newPassword: formData.newPassword,
+        }),
+      });
+      const data = await response.json();
 
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      setUser(updatedUser);
+      if (!response.ok) {
+        setErrors({ [data.field || "newPassword"]: data.error || "Could not change password" });
+        return;
+      }
 
       setSuccess(true);
-      setLoading(false);
 
       // Reset form
       setFormData({
@@ -135,7 +141,11 @@ export default function ChangePasswordPage() {
       setTimeout(() => {
         router.push("/user/profile");
       }, 2000);
-    }, 1500);
+    } catch (err) {
+      setErrors({ newPassword: "Network error, please try again" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getPasswordStrength = (password) => {

@@ -2,16 +2,18 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Order from "@/models/Order";
 import User from "@/models/User";
+import { requireAuth, serverError } from "@/lib/apiAuth";
 
 export async function POST(request) {
+  const { user, response } = requireAuth(request, ["user"]);
+  if (response) return response;
+
   try {
     await connectToDatabase();
 
     const body = await request.json();
     const {
       orderId,
-      userId,
-      userEmail,
       userName,
       items,
       totalAmount,
@@ -21,7 +23,7 @@ export async function POST(request) {
     } = body;
 
     // Validation
-    if (!orderId || !userId || !items || !totalAmount || !deliveryAddress) {
+    if (!orderId || !Array.isArray(items) || items.length === 0 || !totalAmount || !deliveryAddress) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -56,10 +58,20 @@ export async function POST(request) {
     }
     
     // Create order
+    // Saving the same order twice (e.g. refreshing the success page) is fine
+    const existing = await Order.findOne({ orderId: String(orderId) });
+    if (existing) {
+      if (existing.userId !== user.id) {
+        return NextResponse.json({ error: "Order ID already in use" }, { status: 409 });
+      }
+      return NextResponse.json({ message: "Order already saved", order: existing }, { status: 200 });
+    }
+
+    // The customer always comes from the login token, not from the request body
     const order = await Order.create({
-      orderId,
-      userId,
-      userEmail,
+      orderId: String(orderId),
+      userId: user.id,
+      userEmail: user.email,
       userName,
       vendorId: vendor?._id,
       shopName,
@@ -80,10 +92,6 @@ export async function POST(request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating order:", error);
-    return NextResponse.json(
-      { error: "Internal server error", details: error.message },
-      { status: 500 }
-    );
+    return serverError("Error creating order:", error);
   }
 }

@@ -116,37 +116,27 @@ export default function Page() {
         setShops(defaultShops);
       });
 
-    // Subscribe to Server-Sent Events for live additions
-    const es = new EventSource("/api/shops/stream");
-    es.onmessage = (e) => {
-      try {
-        const d = JSON.parse(e.data);
-        // Ignore connection acknowledgements
-        if (!d || !d.name) return;
-
-        setShops((prev) => {
-          // avoid duplicates by id or name
-          if (d.id && prev.some((s) => s.id === d.id)) return prev;
-          if (!d.id && prev.some((s) => s.name === d.name)) return prev;
-          return [
-            { name: d.name, addr: d.addr || "", time: d.time || "Just now", id: d.id },
-            ...prev,
-          ];
-        });
-      } catch (err) {
-        // ignore parse errors
-      }
-    };
-
-    es.onerror = () => {
-      // If SSE fails, we'll keep the fetched list. EventSource auto-reconnects.
-    };
+    // Check for newly registered shops every 30 seconds.
+    // (Polling works on serverless hosts like Vercel, unlike a live stream.)
+    const poll = setInterval(() => {
+      if (document.hidden) return; // don't poll while the tab is in the background
+      fetch("/api/shops")
+        .then((res) => res.json())
+        .then((data) => {
+          if (!mounted || !data?.shops) return;
+          setShops((prev) => {
+            // Only add shops we don't already show, so existing ETAs don't jump around
+            const known = new Set(prev.map((s) => s.id || s.name));
+            const added = data.shops.filter((s) => !known.has(s.id || s.name));
+            return added.length ? [...added, ...prev] : prev;
+          });
+        })
+        .catch(() => {});
+    }, 30000);
 
     return () => {
       mounted = false;
-      try {
-        es.close();
-      } catch (e) {}
+      clearInterval(poll);
     };
   }, []);
 

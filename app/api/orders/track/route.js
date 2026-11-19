@@ -1,40 +1,29 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Order from "@/models/Order";
+import { requireAuth, forbidden, serverError, canViewOrder } from "@/lib/apiAuth";
 
 export async function GET(request) {
+  const { user, response } = requireAuth(request);
+  if (response) return response;
+
   try {
     await connectToDatabase();
 
-    const { searchParams } = new URL(request.url);
-    const orderId = searchParams.get("orderId");
-    const userId = searchParams.get("userId");
-
+    const orderId = new URL(request.url).searchParams.get("orderId");
     if (!orderId) {
-      return NextResponse.json(
-        { error: "Order ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
     }
 
     // Find order by orderId (not MongoDB _id)
-    const query = { orderId };
-    if (userId) {
-      query.userId = userId;
-    }
-
-    const order = await Order.findOne(query);
-
+    const order = await Order.findOne({ orderId: String(orderId) });
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
+    if (!canViewOrder(user, order)) return forbidden();
 
     return NextResponse.json({ order }, { status: 200 });
   } catch (error) {
-    console.error("Error fetching order:", error);
-    return NextResponse.json(
-      { error: "Internal server error", details: error.message },
-      { status: 500 }
-    );
+    return serverError("Error fetching order:", error);
   }
 }

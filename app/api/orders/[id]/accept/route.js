@@ -1,19 +1,22 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Order from "@/models/Order";
+import { requireAuth, forbidden, serverError } from "@/lib/apiAuth";
 
 export async function POST(request, { params }) {
+  const { user, response } = requireAuth(request, ["admin"]);
+  if (response) return response;
+
   try {
     await connectToDatabase();
-
-    const { id } = params;
+    const { id } = await params;
 
     const order = await Order.findById(id);
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
+    if (order.vendorId !== user.id) return forbidden();
 
-    // Update order status to Accepted
     order.status = "Accepted";
     order.acceptedAt = new Date();
     await order.save();
@@ -23,10 +26,6 @@ export async function POST(request, { params }) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error accepting order:", error);
-    return NextResponse.json(
-      { error: "Internal server error", details: error.message },
-      { status: 500 }
-    );
+    return serverError("Error accepting order:", error);
   }
 }

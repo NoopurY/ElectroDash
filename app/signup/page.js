@@ -16,6 +16,7 @@ export default function SignupPage() {
     shopName: "",
     shopAddress: "",
     vehicleType: "",
+    vendorCode: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -61,6 +62,7 @@ export default function SignupPage() {
           shopName: formData.shopName,
           shopAddress: formData.shopAddress,
           vehicleType: formData.vehicleType,
+          vendorCode: formData.vendorCode,
         }),
       });
 
@@ -265,6 +267,31 @@ export default function SignupPage() {
                   onChange={handleChange}
                   rows="2"
                   placeholder="Full shop address"
+                  className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
+                  style={{
+                    borderColor: "#DADADA",
+                    color: "#212121",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
+                  onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="vendorCode"
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: "#212121" }}
+                >
+                  Vendor Invite Code
+                </label>
+                <input
+                  id="vendorCode"
+                  name="vendorCode"
+                  type="text"
+                  value={formData.vendorCode}
+                  onChange={handleChange}
+                  placeholder="Only needed if the site owner gave you one"
                   className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
                   style={{
                     borderColor: "#DADADA",
