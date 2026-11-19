@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Bike, ShoppingBag, Store } from "lucide-react";
+import AuthShell from "@/components/AuthShell";
+import { Alert, Field, Spinner } from "@/components/ui";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -91,323 +94,209 @@ export default function SignupPage() {
     }
   };
 
+  const ROLES = [
+    { value: "user", label: "Customer", text: "Order parts", icon: ShoppingBag },
+    { value: "admin", label: "Vendor", text: "Sell from your shop", icon: Store },
+    { value: "delivery", label: "Delivery", text: "Earn by delivering", icon: Bike },
+  ];
+
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4"
-      style={{ backgroundColor: "#EAF2FF" }}
+    <AuthShell
+      title="Create your account"
+      subtitle="Join ElectroDash in under a minute."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link href="/login" className="font-semibold text-brand-600 hover:text-brand-700">
+            Log in
+          </Link>
+        </>
+      }
     >
-      <div
-        className="w-full max-w-sm p-6 rounded-xl"
-        style={{
-          backgroundColor: "#FFFFFF",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
-      >
-        <h1
-          className="text-2xl font-bold text-center mb-1"
-          style={{ color: "#5A8DEE" }}
-        >
-          Create Account
-        </h1>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && <Alert>{error}</Alert>}
 
-        {error && (
-          <div
-            className="mb-3 p-2 rounded text-sm"
-            style={{ backgroundColor: "#FFE5DD", color: "#FF6B35" }}
-          >
-            {error}
+        <fieldset>
+          <legend className="field-label">I want to</legend>
+          <div className="grid grid-cols-3 gap-2.5">
+            {ROLES.map(({ value, label, text, icon: Icon }) => {
+              const active = formData.role === value;
+              return (
+                <label
+                  key={value}
+                  className={`relative flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl border px-2 py-3.5 text-center transition ${
+                    active
+                      ? "border-brand-500 bg-brand-50 ring-4 ring-brand-500/10"
+                      : "border-line bg-white hover:border-slate-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value={value}
+                    checked={active}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <span
+                    className={`grid h-9 w-9 place-items-center rounded-xl ${
+                      active ? "bg-brand-600 text-white" : "bg-slate-100 text-ink-soft"
+                    }`}
+                  >
+                    <Icon size={18} />
+                  </span>
+                  <span className={`text-sm font-semibold ${active ? "text-brand-700" : "text-ink"}`}>{label}</span>
+                  <span className="hidden text-[11px] leading-tight text-muted sm:block">{text}</span>
+                </label>
+              );
+            })}
           </div>
-        )}
+        </fieldset>
 
-  <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label
-              htmlFor="name"
-              className="block mb-2 font-medium"
-              style={{ color: "#212121" }}
-            >
-              Full Name
-            </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Full name" htmlFor="name">
             <input
               type="text"
               id="name"
               name="name"
+              autoComplete="name"
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
-              style={{
-                borderColor: "#DADADA",
-                color: "#212121",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-              onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
+              className="input"
+              placeholder="Riya Mehta"
             />
-          </div>
-
-          <div>
-            <label
-              htmlFor="email"
-              className="block mb-2 font-medium"
-              style={{ color: "#212121" }}
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
-              style={{
-                borderColor: "#DADADA",
-                color: "#212121",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-              onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="phone"
-              className="block mb-2 font-medium"
-              style={{ color: "#212121" }}
-            >
-              Phone Number
-            </label>
+          </Field>
+          <Field label="Phone" htmlFor="phone">
             <input
               type="tel"
               id="phone"
               name="phone"
+              autoComplete="tel"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
-              style={{
-                borderColor: "#DADADA",
-                color: "#212121",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-              onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
+              className="input"
+              placeholder="98200 00000"
             />
-          </div>
+          </Field>
+        </div>
 
-          <div>
-            <label
-              htmlFor="role"
-              className="block mb-2 font-medium"
-              style={{ color: "#212121" }}
+        <Field label="Email address" htmlFor="email">
+          <input
+            type="email"
+            id="email"
+            name="email"
+            autoComplete="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            className="input"
+            placeholder="you@example.com"
+          />
+        </Field>
+
+        {formData.role === "admin" && (
+          <div className="space-y-4 rounded-2xl border border-line bg-surface p-4 animate-fade-up">
+            <p className="eyebrow">Shop details</p>
+            <Field label="Shop name" htmlFor="shopName">
+              <input
+                type="text"
+                id="shopName"
+                name="shopName"
+                value={formData.shopName}
+                onChange={handleChange}
+                required
+                placeholder="e.g. Gada Electronics"
+                className="input"
+              />
+            </Field>
+            <Field label="Shop address" htmlFor="shopAddress">
+              <textarea
+                id="shopAddress"
+                name="shopAddress"
+                value={formData.shopAddress}
+                onChange={handleChange}
+                rows="2"
+                placeholder="Shop no., street, area"
+                className="input"
+              />
+            </Field>
+            <Field
+              label="Vendor invite code"
+              htmlFor="vendorCode"
+              hint="Only needed if the site owner gave you one."
             >
-              Account Type
-            </label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
-              style={{
-                borderColor: "#DADADA",
-                color: "#212121",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-              onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
-            >
-              <option value="user">Customer</option>
-              <option value="delivery">Delivery Partner</option>
-              <option value="admin">Vendor/Shop Owner</option>
-            </select>
+              <input
+                id="vendorCode"
+                name="vendorCode"
+                type="text"
+                value={formData.vendorCode}
+                onChange={handleChange}
+                className="input"
+              />
+            </Field>
           </div>
+        )}
 
-          {/* Conditional fields for Vendor */}
-          {formData.role === "admin" && (
-            <>
-              <div>
-                <label
-                  htmlFor="shopName"
-                  className="block mb-2 font-medium"
-                  style={{ color: "#212121" }}
-                >
-                  Shop Name *
-                </label>
-                <input
-                  type="text"
-                  id="shopName"
-                  name="shopName"
-                  value={formData.shopName}
-                  onChange={handleChange}
-                  required
-                  placeholder="e.g., Gada Electronics"
-                  className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
-                  style={{
-                    borderColor: "#DADADA",
-                    color: "#212121",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-                  onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="shopAddress"
-                  className="block mb-2 font-medium"
-                  style={{ color: "#212121" }}
-                >
-                  Shop Address
-                </label>
-                <textarea
-                  id="shopAddress"
-                  name="shopAddress"
-                  value={formData.shopAddress}
-                  onChange={handleChange}
-                  rows="2"
-                  placeholder="Full shop address"
-                  className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
-                  style={{
-                    borderColor: "#DADADA",
-                    color: "#212121",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-                  onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="vendorCode"
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#212121" }}
-                >
-                  Vendor Invite Code
-                </label>
-                <input
-                  id="vendorCode"
-                  name="vendorCode"
-                  type="text"
-                  value={formData.vendorCode}
-                  onChange={handleChange}
-                  placeholder="Only needed if the site owner gave you one"
-                  className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
-                  style={{
-                    borderColor: "#DADADA",
-                    color: "#212121",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-                  onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Conditional fields for Delivery Partner */}
-          {formData.role === "delivery" && (
-            <div>
-              <label
-                htmlFor="vehicleType"
-                className="block mb-2 font-medium"
-                style={{ color: "#212121" }}
-              >
-                Vehicle Type *
-              </label>
+        {formData.role === "delivery" && (
+          <div className="rounded-2xl border border-line bg-surface p-4 animate-fade-up">
+            <Field label="Vehicle type" htmlFor="vehicleType">
               <select
                 id="vehicleType"
                 name="vehicleType"
                 value={formData.vehicleType}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
-                style={{
-                  borderColor: "#DADADA",
-                  color: "#212121",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-                onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
+                className="input"
               >
-                <option value="">Select Vehicle</option>
+                <option value="">Select your vehicle</option>
                 <option value="Bike">Bike</option>
                 <option value="Scooter">Scooter</option>
                 <option value="Bicycle">Bicycle</option>
                 <option value="Car">Car</option>
               </select>
-            </div>
-          )}
+            </Field>
+          </div>
+        )}
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block mb-2 font-medium"
-              style={{ color: "#212121" }}
-            >
-              Password
-            </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Password" htmlFor="password" hint="At least 6 characters">
             <input
               type="password"
               id="password"
               name="password"
+              autoComplete="new-password"
               value={formData.password}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 rounded border outline-none focus:ring-2 text-sm"
-              style={{
-                borderColor: "#DADADA",
-                color: "#212121",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-              onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
+              minLength={6}
+              className="input"
             />
-          </div>
-
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block mb-2 font-medium"
-              style={{ color: "#212121" }}
-            >
-              Confirm Password
-            </label>
+          </Field>
+          <Field label="Confirm password" htmlFor="confirmPassword">
             <input
               type="password"
               id="confirmPassword"
               name="confirmPassword"
+              autoComplete="new-password"
               value={formData.confirmPassword}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded border outline-none focus:ring-2"
-              style={{
-                borderColor: "#DADADA",
-                color: "#212121",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-              onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
+              className="input"
             />
-          </div>
+          </Field>
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 rounded font-md text-white hover:pointer hover:text-blue-950 disabled:opacity-10 text-md"
-            style={{ backgroundColor: "#40E0D0" }}
-          >
-            {loading ? "Creating Account..." : "Sign Up"}
-          </button>
-        </form>
-
-        <p className="mt-4 text-center text-sm" style={{ color: "#6B6B6B" }}>
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-medium hover:underline"
-            style={{ color: "#5A8DEE" }}
-          >
-            Login here
-          </Link>
-        </p>
-      </div>
-    </div>
+        <button type="submit" disabled={loading} className="btn btn-primary btn-lg w-full">
+          {loading ? (
+            <>
+              <Spinner size={16} /> Creating account…
+            </>
+          ) : (
+            "Create account"
+          )}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

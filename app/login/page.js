@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
+import AuthShell from "@/components/AuthShell";
+import { Alert, Field, Spinner } from "@/components/ui";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +15,7 @@ export default function LoginPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -61,128 +65,69 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: "#EAF2FF" }}
+    <AuthShell
+      title="Welcome back"
+      subtitle="Log in to order components, manage your shop, or start delivering."
+      footer={
+        <>
+          New to ElectroDash?{" "}
+          <Link href="/signup" className="font-semibold text-brand-600 hover:text-brand-700">
+            Create an account
+          </Link>
+        </>
+      }
     >
-      <div
-        className="w-full max-w-md p-8 rounded-lg"
-        style={{
-          backgroundColor: "#FFFFFF",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-        }}
-      >
-        <h1
-          className="text-3xl font-bold text-center mb-2"
-          style={{ color: "#5A8DEE" }}
-        >
-          Welcome Back
-        </h1>
-        <p className="text-center mb-6" style={{ color: "#6B6B6B" }}>
-          Login to your account
-        </p>
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate={false}>
+        {error && <Alert>{error}</Alert>}
 
-        {error && (
-          <div
-            className="mb-4 p-3 rounded"
-            style={{ backgroundColor: "#FFE5DD", color: "#FF6B35" }}
-          >
-            {error}
-          </div>
-        )}
+        <Field label="Email address" htmlFor="email">
+          <input
+            type="email"
+            id="email"
+            name="email"
+            autoComplete="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            className="input"
+            placeholder="you@example.com"
+          />
+        </Field>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block mb-2 font-medium"
-              style={{ color: "#212121" }}
-            >
-              Email Address
-            </label>
+        <Field label="Password" htmlFor="password">
+          <div className="relative">
             <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 rounded border outline-none focus:ring-2"
-              style={{
-                borderColor: "#DADADA",
-                color: "#212121",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-              onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
-              placeholder="Enter your email"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block mb-2 font-medium"
-              style={{ color: "#212121" }}
-            >
-              Password
-            </label>
-            <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               id="password"
               name="password"
+              autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded border outline-none focus:ring-2"
-              style={{
-                borderColor: "#DADADA",
-                color: "#212121",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "#5A8DEE")}
-              onBlur={(e) => (e.target.style.borderColor = "#DADADA")}
-              placeholder="Enter your password"
+              className="input pr-11"
+              placeholder="Your password"
             />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                className="mr-2"
-                style={{ accentColor: "#5A8DEE" }}
-              />
-              <span style={{ color: "#6B6B6B" }}>Remember me</span>
-            </label>
-            <Link
-              href="/forgot-password"
-              className="text-sm hover:underline"
-              style={{ color: "#5A8DEE" }}
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute inset-y-0 right-0 grid w-11 place-items-center text-muted hover:text-ink"
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              Forgot password?
-            </Link>
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
+        </Field>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 px-4 rounded font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-            style={{ backgroundColor: "#023E8A" }}
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center" style={{ color: "#6B6B6B" }}>
-          {"Don'" + "t have an account? "}
-          <Link
-            href="/signup"
-            className="font-medium hover:underline"
-            style={{ color: "#5A8DEE" }}
-          >
-            Sign up here
-          </Link>
-        </p>
-      </div>
-    </div>
+        <button type="submit" disabled={loading} className="btn btn-primary btn-lg w-full">
+          {loading ? (
+            <>
+              <Spinner size={16} /> Logging in…
+            </>
+          ) : (
+            "Log in"
+          )}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

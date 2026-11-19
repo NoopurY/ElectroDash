@@ -2,16 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import {
-  ArrowLeft,
-  Lock,
-  Eye,
-  EyeOff,
-  CheckCircle,
-  AlertCircle,
-  Shield,
-} from "lucide-react";
+import { Eye, EyeOff, CheckCircle, Shield } from "lucide-react";
+import { Alert, AppHeader, Field, Page, PageLoader, PageTitle, Spinner } from "@/components/ui";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -168,278 +160,122 @@ export default function ChangePasswordPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 border-4 border-[#5A8DEE] border-t-transparent rounded-full animate-spin"></div>
-          <div className="text-xl text-[#5A8DEE] font-semibold">Loading...</div>
-        </div>
+      <div className="min-h-screen bg-surface">
+        <AppHeader role="user" />
+        <PageLoader />
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push("/user/profile")}
-              className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition"
-            >
-              <ArrowLeft className="text-white" size={24} />
-            </button>
-            <div className="flex items-center gap-3">
-              <Image
-                src="/ElectroDash.png"
-                alt="ElectroDash"
-                width={40}
-                height={40}
-                className="rounded-lg"
-              />
-              <div>
-                <h1 className="text-2xl font-bold text-white">
-                  Change Password
-                </h1>
-                <p className="text-white/80 text-sm">
-                  Update your account password
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+  const PasswordInput = ({ field, label, id, autoComplete, children }) => (
+    <Field label={label} htmlFor={id} error={errors[field]}>
+      <div className="relative">
+        <input
+          id={id}
+          type={showPasswords[field === "currentPassword" ? "current" : field === "newPassword" ? "new" : "confirm"] ? "text" : "password"}
+          autoComplete={autoComplete}
+          value={formData[field]}
+          onChange={(e) => handleInputChange(field, e.target.value)}
+          className={`input pr-11 ${errors[field] ? "input-error" : ""}`}
+          disabled={success || loading}
+        />
+        <button
+          type="button"
+          onClick={() =>
+            togglePasswordVisibility(field === "currentPassword" ? "current" : field === "newPassword" ? "new" : "confirm")
+          }
+          className="absolute inset-y-0 right-0 grid w-11 place-items-center text-muted hover:text-ink"
+          aria-label="Show or hide password"
+        >
+          {showPasswords[field === "currentPassword" ? "current" : field === "newPassword" ? "new" : "confirm"] ? (
+            <EyeOff size={18} />
+          ) : (
+            <Eye size={18} />
+          )}
+        </button>
+      </div>
+      {children}
+    </Field>
+  );
 
-      {/* Main Content */}
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        {/* Success Message */}
+  const strengthTone =
+    passwordStrength.label === "Weak"
+      ? "text-red-600"
+      : passwordStrength.label === "Medium"
+      ? "text-amber-600"
+      : "text-green-600";
+
+  return (
+    <div className="min-h-screen bg-surface">
+      <AppHeader role="user" />
+      <Page className="max-w-2xl">
+        <PageTitle back="/user/profile" title="Change password" subtitle="Choose a strong password you don’t use anywhere else." />
+
         {success && (
-          <div className="mb-6 bg-green-50 border-2 border-green-500 rounded-xl p-6 animate-fade-in">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shrink-0">
-                <CheckCircle className="text-white" size={24} />
-              </div>
-              <div>
-                <h3 className="font-bold text-green-800 text-lg mb-1">
-                  Password Changed Successfully!
-                </h3>
-                <p className="text-green-600">
-                  Your password has been updated. Redirecting to profile...
-                </p>
-              </div>
-            </div>
+          <div className="mb-5 animate-fade-up">
+            <Alert tone="success">
+              <span className="flex items-center gap-2 font-semibold">
+                <CheckCircle size={18} /> Password changed. Taking you back to your profile…
+              </span>
+            </Alert>
           </div>
         )}
 
-        {/* Security Notice */}
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-          <Shield className="text-blue-600 shrink-0" size={24} />
-          <div>
-            <h3 className="font-semibold text-blue-800 mb-1">Security Tips</h3>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li>• Use at least 8 characters</li>
-              <li>• Include uppercase and lowercase letters</li>
-              <li>• Add numbers and special characters</li>
-              <li>• Do not reuse old passwords</li>
+        <form onSubmit={handleSubmit} className="card space-y-5 p-5 sm:p-6">
+          {PasswordInput({ field: "currentPassword", label: "Current password", id: "pw-current", autoComplete: "current-password" })}
+
+          {PasswordInput({
+            field: "newPassword",
+            label: "New password",
+            id: "pw-new",
+            autoComplete: "new-password",
+            children: formData.newPassword ? (
+              <div className="mt-2.5">
+                <div className="flex gap-1.5">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <span
+                      key={n}
+                      className={`h-1.5 flex-1 rounded-full transition ${
+                        n <= passwordStrength.strength ? passwordStrength.color : "bg-slate-200"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className={`mt-1.5 text-xs font-medium ${strengthTone}`}>{passwordStrength.label} password</p>
+              </div>
+            ) : null,
+          })}
+
+          {PasswordInput({ field: "confirmPassword", label: "Confirm new password", id: "pw-confirm", autoComplete: "new-password" })}
+
+          <div className="rounded-xl bg-surface px-4 py-3">
+            <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <Shield size={16} className="text-brand-600" /> Tips for a strong password
+            </p>
+            <ul className="mt-2 grid gap-1 text-xs text-muted sm:grid-cols-2">
+              <li>• At least 8 characters</li>
+              <li>• Upper and lower case letters</li>
+              <li>• Numbers and symbols</li>
+              <li>• Not reused from another site</li>
             </ul>
           </div>
-        </div>
 
-        {/* Change Password Form */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Current Password */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Lock size={16} />
-                Current Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPasswords.current ? "text" : "password"}
-                  value={formData.currentPassword}
-                  onChange={(e) =>
-                    handleInputChange("currentPassword", e.target.value)
-                  }
-                  className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none transition ${
-                    errors.currentPassword
-                      ? "border-red-500 focus:border-red-500"
-                      : "border-gray-200 focus:border-[#5A8DEE]"
-                  }`}
-                  placeholder="Enter your current password"
-                  disabled={success || loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility("current")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPasswords.current ? (
-                    <EyeOff size={20} />
-                  ) : (
-                    <Eye size={20} />
-                  )}
-                </button>
-              </div>
-              {errors.currentPassword && (
-                <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                  <AlertCircle size={14} />
-                  {errors.currentPassword}
-                </p>
+          <div className="flex flex-col-reverse gap-2 border-t border-line pt-5 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => router.push("/user/profile")} className="btn btn-ghost" disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={success || loading}>
+              {loading ? (
+                <>
+                  <Spinner size={16} /> Updating…
+                </>
+              ) : (
+                "Update password"
               )}
-            </div>
-
-            {/* New Password */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Lock size={16} />
-                New Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPasswords.new ? "text" : "password"}
-                  value={formData.newPassword}
-                  onChange={(e) =>
-                    handleInputChange("newPassword", e.target.value)
-                  }
-                  className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none transition ${
-                    errors.newPassword
-                      ? "border-red-500 focus:border-red-500"
-                      : "border-gray-200 focus:border-[#5A8DEE]"
-                  }`}
-                  placeholder="Enter your new password"
-                  disabled={success || loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility("new")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPasswords.new ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-
-              {/* Password Strength Indicator */}
-              {formData.newPassword && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-gray-600">
-                      Password Strength:
-                    </span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        passwordStrength.label === "Weak"
-                          ? "text-red-500"
-                          : passwordStrength.label === "Medium"
-                          ? "text-yellow-500"
-                          : "text-green-500"
-                      }`}
-                    >
-                      {passwordStrength.label}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${passwordStrength.color}`}
-                      style={{
-                        width: `${(passwordStrength.strength / 5) * 100}%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              {errors.newPassword && (
-                <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                  <AlertCircle size={14} />
-                  {errors.newPassword}
-                </p>
-              )}
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Lock size={16} />
-                Confirm New Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPasswords.confirm ? "text" : "password"}
-                  value={formData.confirmPassword}
-                  onChange={(e) =>
-                    handleInputChange("confirmPassword", e.target.value)
-                  }
-                  className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none transition ${
-                    errors.confirmPassword
-                      ? "border-red-500 focus:border-red-500"
-                      : "border-gray-200 focus:border-[#5A8DEE]"
-                  }`}
-                  placeholder="Confirm your new password"
-                  disabled={success || loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility("confirm")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPasswords.confirm ? (
-                    <EyeOff size={20} />
-                  ) : (
-                    <Eye size={20} />
-                  )}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                  <AlertCircle size={14} />
-                  {errors.confirmPassword}
-                </p>
-              )}
-            </div>
-
-            {/* Submit Buttons */}
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => router.push("/user/profile")}
-                className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-6 py-3 bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={success || loading}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Updating...
-                  </span>
-                ) : (
-                  "Update Password"
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Additional Security Info */}
-        <div className="mt-6 bg-white rounded-xl shadow-md p-6">
-          <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <Shield size={20} className="text-[#5A8DEE]" />
-            Account Security
-          </h3>
-          <div className="space-y-2 text-sm text-gray-600">
-            <p>✓ Your password is encrypted and secure</p>
-            <p>✓ We will never share your password with anyone</p>
-            <p>✓ You will stay logged in after changing your password</p>
-            <p>✓ Consider using a password manager for better security</p>
+            </button>
           </div>
-        </div>
-      </main>
+        </form>
+      </Page>
     </div>
   );
 }

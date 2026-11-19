@@ -3,17 +3,27 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Truck,
   MapPin,
   Package,
   CheckCircle,
-  Clock,
   Phone,
   Store,
-  ToggleLeft,
-  ToggleRight,
+  Navigation,
+  Power,
+  RefreshCw,
+  Wallet,
 } from "lucide-react";
+import {
+  AppHeader,
+  EmptyState,
+  Page,
+  PageLoader,
+  SectionTitle,
+  Spinner,
+  StatCard,
+  formatINR,
+} from "@/components/ui";
 
 export default function DeliveryDashboard() {
   const router = useRouter();
@@ -21,6 +31,12 @@ export default function DeliveryDashboard() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [notice, setNotice] = useState("");
+  const [updatingId, setUpdatingId] = useState(null);
+  const flash = (msg) => {
+    setNotice(msg);
+    setTimeout(() => setNotice(""), 2500);
+  };
   const [stats, setStats] = useState({
     pending: 0,
     completed: 0,
@@ -39,7 +55,6 @@ export default function DeliveryDashboard() {
 
     const parsedUser = JSON.parse(userData);
     if (parsedUser.role !== "delivery") {
-      alert("Access denied. Delivery partners only.");
       router.push("/login");
       return;
     }
@@ -116,16 +131,18 @@ export default function DeliveryDashboard() {
         const userData = JSON.parse(localStorage.getItem("user"));
         userData.isAvailable = data.isAvailable;
         localStorage.setItem("user", JSON.stringify(userData));
+        flash(data.isAvailable ? "You are online" : "You are offline");
       } else {
-        alert("Failed to update availability");
+        flash("Could not update your availability");
       }
     } catch (error) {
       console.error("Error updating availability:", error);
-      alert("Error updating availability");
+      flash("Network error. Please try again.");
     }
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
+    setUpdatingId(orderId);
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`/api/orders/${orderId}/status`, {
@@ -140,295 +157,234 @@ export default function DeliveryDashboard() {
       if (response.ok) {
         // Refresh orders
         fetchOrders(user._id || user.id);
-        alert(`Order marked as ${newStatus}`);
+        flash(`Marked as ${newStatus}`);
       } else {
-        alert("Failed to update order status");
+        flash("Could not update this order");
       }
     } catch (error) {
       console.error("Error updating order:", error);
-      alert("Error updating order status");
+      flash("Network error. Please try again.");
+    } finally {
+      setUpdatingId(null);
     }
   };
 
+  const ACTIVE = ["Assigned", "Picked Up", "On the Way"];
+  const STEPS = ["Assigned", "Picked Up", "On the Way", "Delivered"];
+  const NEXT = {
+    Assigned: { status: "Picked Up", label: "I've picked it up", icon: Package, cls: "btn-primary" },
+    "Picked Up": { status: "On the Way", label: "Start delivery", icon: Navigation, cls: "btn-primary" },
+    "On the Way": { status: "Delivered", label: "Mark delivered", icon: CheckCircle, cls: "btn-success" },
+  };
+  const activeOrders = orders.filter((o) => ACTIVE.includes(o.status));
+  const doneOrders = orders.filter((o) => o.status === "Delivered");
+  const addressLine = (a) => [a?.street, a?.city, a?.zipCode].filter(Boolean).join(", ");
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-cyan-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5A8DEE] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
+      <div className="min-h-screen bg-surface">
+        <AppHeader role="delivery" />
+        <PageLoader />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-cyan-50 pb-20">
-      {/* Header */}
-      <header className="bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white shadow-lg sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Truck size={32} />
-              <div>
-                <h1 className="text-2xl font-bold">Delivery Dashboard</h1>
-                <p className="text-sm text-white/80">{user?.name}</p>
-              </div>
+    <div className="min-h-screen bg-surface">
+      <AppHeader role="delivery" />
+      <Page className="max-w-4xl">
+        {notice && (
+          <div className="fixed inset-x-0 top-20 z-50 flex justify-center px-4">
+            <div className="animate-fade-up rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-white shadow-pop" role="status">
+              {notice}
             </div>
+          </div>
+        )}
 
-            {/* Availability Toggle */}
-            <button
-              onClick={toggleAvailability}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${
+        {/* Availability */}
+        <section
+          className={`card flex flex-wrap items-center gap-4 p-5 transition ${
+            isAvailable ? "border-green-200 bg-gradient-to-r from-green-50 to-white" : ""
+          }`}
+        >
+          <span
+            className={`relative grid h-12 w-12 place-items-center rounded-full ${
+              isAvailable ? "bg-green-600 text-white" : "bg-slate-200 text-slate-500"
+            }`}
+          >
+            <Power size={22} />
+            {isAvailable && <span className="absolute inset-0 animate-ping rounded-full bg-green-500/30" />}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-bold text-ink">{isAvailable ? "You're online" : "You're offline"}</p>
+            <p className="text-sm text-muted">
+              {isAvailable ? "Shops can assign deliveries to you." : "Go online to start receiving deliveries."}
+            </p>
+          </div>
+          <button
+            role="switch"
+            aria-checked={isAvailable}
+            onClick={toggleAvailability}
+            className={`relative h-8 w-14 shrink-0 rounded-full transition ${isAvailable ? "bg-green-600" : "bg-slate-300"}`}
+            aria-label="Toggle availability"
+          >
+            <span
+              className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${isAvailable ? "left-7" : "left-1"}`}
+            />
+          </button>
+        </section>
+
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          <StatCard label="Active" value={stats.pending} icon={Truck} />
+          <StatCard label="Completed" value={stats.completed} icon={CheckCircle} tone="green" />
+          <StatCard label="Earnings" value={formatINR(stats.earnings)} icon={Wallet} tone="accent" />
+        </div>
+
+        {/* Active deliveries */}
+        <section className="mt-8">
+          <SectionTitle
+            action={
+              <button onClick={() => fetchOrders(user._id || user.id)} className="btn btn-ghost btn-sm">
+                <RefreshCw size={14} /> Refresh
+              </button>
+            }
+          >
+            Active deliveries
+          </SectionTitle>
+
+          {activeOrders.length === 0 ? (
+            <EmptyState
+              icon={Truck}
+              title="No active deliveries"
+              text={
                 isAvailable
-                  ? "bg-green-500 hover:bg-green-600"
-                  : "bg-gray-500 hover:bg-gray-600"
-              }`}
-            >
-              {isAvailable ? (
-                <>
-                  <ToggleRight size={24} />
-                  Available
-                </>
-              ) : (
-                <>
-                  <ToggleLeft size={24} />
-                  Offline
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Active Deliveries</p>
-                <p className="text-3xl font-bold text-[#5A8DEE]">
-                  {stats.pending}
-                </p>
-              </div>
-              <Package className="text-[#5A8DEE]" size={40} />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Completed Today</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {stats.completed}
-                </p>
-              </div>
-              <CheckCircle className="text-green-600" size={40} />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Earnings</p>
-                <p className="text-3xl font-bold text-[#40E0D0]">
-                  ₹{stats.earnings.toFixed(2)}
-                </p>
-              </div>
-              <Truck className="text-[#40E0D0]" size={40} />
-            </div>
-          </div>
-        </div>
-
-        {/* Orders List */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Package size={24} className="text-[#5A8DEE]" />
-            Your Deliveries
-          </h2>
-
-          {orders.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-md p-8 text-center">
-              <Package size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 text-lg">
-                No deliveries assigned yet
-              </p>
-              <p className="text-gray-500 text-sm mt-2">
-                {isAvailable
-                  ? "Wait for vendors to assign you deliveries"
-                  : "Turn on availability to receive deliveries"}
-              </p>
-            </div>
+                  ? "Stay online. New deliveries appear here automatically."
+                  : "You're offline. Go online to get deliveries."
+              }
+            />
           ) : (
-            orders.map((order) => (
-              <div
-                key={order._id}
-                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">
-                      Order #{order.orderId}
-                    </h3>
-                    <p className="text-sm text-gray-600 flex items-center gap-1">
-                      <Store size={14} />
-                      {order.shopName}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      order.status === "Delivered"
-                        ? "bg-green-100 text-green-700"
-                        : order.status === "On the Way"
-                        ? "bg-blue-100 text-blue-700"
-                        : order.status === "Picked Up"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {order.status}
-                  </span>
-                </div>
+            <div className="space-y-4">
+              {activeOrders.map((order) => {
+                const next = NEXT[order.status];
+                const stepIdx = STEPS.indexOf(order.status);
+                const busy = updatingId === order._id;
+                return (
+                  <article key={order._id} className="card overflow-hidden">
+                    {/* Progress */}
+                    <div className="flex gap-1 bg-surface px-5 pt-4">
+                      {STEPS.map((s, i) => (
+                        <div key={s} className="flex-1">
+                          <div className={`h-1.5 rounded-full ${i <= stepIdx ? "bg-brand-600" : "bg-slate-200"}`} />
+                          <p className={`mt-1.5 text-[11px] font-medium ${i <= stepIdx ? "text-ink" : "text-muted"}`}>{s}</p>
+                        </div>
+                      ))}
+                    </div>
 
-                {/* Order Items */}
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                    <Package size={14} />
-                    Items to Deliver ({order.items?.length || 0})
-                  </p>
-                  <div className="space-y-1">
-                    {order.items?.slice(0, 3).map((item, idx) => (
-                      <p key={idx} className="text-sm text-gray-600">
-                        • {item.quantity}x {item.name}
-                      </p>
-                    ))}
-                    {order.items?.length > 3 && (
-                      <p className="text-sm text-gray-500 italic">
-                        +{order.items.length - 3} more items
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Delivery Address */}
-                <div className="space-y-3 mb-4 p-4 bg-blue-50 border-l-4 border-[#5A8DEE] rounded">
-                  <p className="text-sm font-semibold text-[#5A8DEE] flex items-center gap-1">
-                    <MapPin size={16} />
-                    Delivery Address
-                  </p>
-                  <div className="space-y-1">
-                    <p className="font-semibold text-gray-800">
-                      {order.userName}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      {order.deliveryAddress.street}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      {order.deliveryAddress.city},{" "}
-                      {order.deliveryAddress.state} -{" "}
-                      {order.deliveryAddress.zipCode}
-                    </p>
-                    {order.deliveryAddress.phone && (
-                      <a
-                        href={`tel:${order.deliveryAddress.phone}`}
-                        className="flex items-center gap-2 text-[#5A8DEE] hover:text-[#40E0D0] text-sm font-medium mt-2"
-                      >
-                        <Phone size={14} />
-                        {order.deliveryAddress.phone}
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {/* Customer Notes */}
-                {order.customerNotes && (
-                  <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">
-                      Customer Notes:
-                    </p>
-                    <p className="text-sm text-gray-600 italic">
-                      “{order.customerNotes}”
-                    </p>
-                  </div>
-                )}
-
-                {/* Order Amount & Earning */}
-                <div className="grid grid-cols-2 gap-4 py-3 border-t border-gray-200">
-                  <div>
-                    <span className="text-gray-600 text-sm">Order Amount:</span>
-                    <p className="text-xl font-bold text-[#5A8DEE]">
-                      ₹{order.totalAmount.toFixed(2)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 text-sm">Your Earning:</span>
-                    <p className="text-xl font-bold text-green-600">
-                      ₹{(order.totalAmount * 0.1).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="space-y-3 mt-4">
-                  {/* Navigation Button */}
-                  {order.status !== "Delivered" && (
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.state} ${order.deliveryAddress.zipCode}`
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                    >
-                      <MapPin size={18} />
-                      Navigate to Customer
-                    </a>
-                  )}
-
-                  {/* Status Update Buttons */}
-                  <div className="flex gap-3">
-                    {order.status === "Assigned" && (
-                      <button
-                        onClick={() =>
-                          updateOrderStatus(order._id, "Picked Up")
-                        }
-                        className="flex-1 px-4 py-2 bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white rounded-lg font-semibold hover:shadow-lg transition"
-                      >
-                        Mark as Picked Up
-                      </button>
-                    )}
-                    {order.status === "Picked Up" && (
-                      <button
-                        onClick={() =>
-                          updateOrderStatus(order._id, "On the Way")
-                        }
-                        className="flex-1 px-4 py-2 bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white rounded-lg font-semibold hover:shadow-lg transition"
-                      >
-                        Mark as On the Way
-                      </button>
-                    )}
-                    {order.status === "On the Way" && (
-                      <button
-                        onClick={() =>
-                          updateOrderStatus(order._id, "Delivered")
-                        }
-                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
-                      >
-                        Mark as Delivered
-                      </button>
-                    )}
-                    {order.status === "Delivered" && (
-                      <div className="flex-1 text-center py-2 text-green-600 font-semibold">
-                        ✓ Completed
+                    <div className="p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="font-mono text-sm font-semibold text-ink">#{order.orderId}</p>
+                        <p className="text-right">
+                          <span className="block text-xs text-muted">You earn</span>
+                          <span className="font-bold text-green-700">{formatINR(order.totalAmount * 0.1)}</span>
+                        </p>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
+
+                      {/* Route */}
+                      <ol className="relative mt-4 space-y-4 pl-8">
+                        <span aria-hidden className="absolute bottom-3 left-[11px] top-3 w-px border-l-2 border-dashed border-slate-200" />
+                        <li className="relative">
+                          <span className="absolute -left-8 grid h-6 w-6 place-items-center rounded-full bg-brand-50 text-brand-600 ring-4 ring-white">
+                            <Store size={13} />
+                          </span>
+                          <p className="text-xs font-medium uppercase tracking-wider text-muted">Pick up</p>
+                          <p className="font-semibold text-ink">{order.shopName}</p>
+                        </li>
+                        <li className="relative">
+                          <span className="absolute -left-8 grid h-6 w-6 place-items-center rounded-full bg-accent-50 text-accent-700 ring-4 ring-white">
+                            <MapPin size={13} />
+                          </span>
+                          <p className="text-xs font-medium uppercase tracking-wider text-muted">Drop off</p>
+                          <p className="font-semibold text-ink">{order.userName}</p>
+                          <p className="text-sm text-ink-soft">{addressLine(order.deliveryAddress)}</p>
+                        </li>
+                      </ol>
+
+                      <ul className="mt-4 flex flex-wrap gap-1.5">
+                        {(order.items || []).map((item, idx) => (
+                          <li key={idx} className="badge h-7 bg-surface px-2.5 font-medium text-ink-soft ring-1 ring-inset ring-line">
+                            {item.quantity}× {item.name}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {order.customerNotes && (
+                        <p className="mt-3 rounded-xl bg-amber-50 px-3.5 py-2.5 text-sm text-amber-900">
+                          <span className="font-semibold">Note:</span> {order.customerNotes}
+                        </p>
+                      )}
+
+                      <div className="mt-5 grid grid-cols-2 gap-2">
+                        {order.deliveryAddress?.phone ? (
+                          <a href={`tel:${order.deliveryAddress.phone}`} className="btn btn-secondary">
+                            <Phone size={16} /> Call
+                          </a>
+                        ) : (
+                          <span className="btn btn-secondary pointer-events-none opacity-50">
+                            <Phone size={16} /> No phone
+                          </span>
+                        )}
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressLine(order.deliveryAddress))}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-secondary"
+                        >
+                          <Navigation size={16} /> Navigate
+                        </a>
+                      </div>
+                      {next && (
+                        <button
+                          onClick={() => updateOrderStatus(order._id, next.status)}
+                          disabled={busy}
+                          className={`btn btn-lg mt-2 w-full ${next.cls}`}
+                        >
+                          {busy ? <Spinner size={16} /> : <next.icon size={18} />} {next.label}
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           )}
-        </div>
-      </div>
+        </section>
+
+        {/* Completed */}
+        {doneOrders.length > 0 && (
+          <section className="mt-8">
+            <SectionTitle>Completed</SectionTitle>
+            <ul className="card divide-y divide-line">
+              {doneOrders.map((order) => (
+                <li key={order._id} className="flex items-center gap-4 px-5 py-3.5">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-green-50 text-green-600">
+                    <CheckCircle size={18} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-ink">
+                      {order.shopName} → {order.userName}
+                    </p>
+                    <p className="text-xs text-muted">
+                      <span className="font-mono">#{order.orderId}</span>
+                      {order.deliveredAt && <> · {new Date(order.deliveredAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</>}
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold text-green-700">+{formatINR(order.totalAmount * 0.1)}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </Page>
     </div>
   );
 }

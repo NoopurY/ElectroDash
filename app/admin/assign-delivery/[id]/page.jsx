@@ -2,14 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import {
-  ArrowLeft,
-  Truck,
-  MapPin,
-  Phone,
-  CheckCircle,
-  Clock,
-} from "lucide-react";
+import { Bike, MapPin, Phone, Truck } from "lucide-react";
+import { Alert, AppHeader, EmptyState, Page, PageLoader, PageTitle, Spinner, formatINR } from "@/components/ui";
 
 export default function AssignDeliveryPage() {
   const router = useRouter();
@@ -19,7 +13,8 @@ export default function AssignDeliveryPage() {
   const [order, setOrder] = useState(null);
   const [deliveryPartners, setDeliveryPartners] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [assigning, setAssigning] = useState(false);
+  const [assigningId, setAssigningId] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     // Define and call async fetchers inside effect to avoid missing dependency lint warnings
@@ -46,7 +41,7 @@ export default function AssignDeliveryPage() {
         }
       } catch (err) {
         console.error("Error loading assign-delivery data", err);
-        alert("Failed to load data");
+        setError("Could not load this order. Please go back and try again.");
       } finally {
         setLoading(false);
       }
@@ -55,53 +50,9 @@ export default function AssignDeliveryPage() {
     load();
   }, [orderId]);
 
-  const fetchOrderDetails = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`/api/orders/${orderId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setOrder(data.order);
-      } else {
-        alert("Failed to fetch order details");
-      }
-    } catch (error) {
-      console.error("Error fetching order:", error);
-      alert("Error fetching order details");
-    }
-  };
-
-  const fetchDeliveryPartners = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("/api/delivery-partners/available", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDeliveryPartners(data.partners || []);
-      } else {
-        console.error("Failed to fetch delivery partners");
-      }
-    } catch (error) {
-      console.error("Error fetching delivery partners:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleAssignPartner = async (partnerId, partnerName) => {
-    if (!confirm(`Assign this order to ${partnerName}?`)) return;
-
-    setAssigning(true);
+    setError("");
+    setAssigningId(partnerId);
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`/api/orders/${orderId}/assign`, {
@@ -117,172 +68,145 @@ export default function AssignDeliveryPage() {
       });
 
       if (response.ok) {
-        alert("Delivery partner assigned successfully!");
         router.push("/admin/dashboard");
-      } else {
-        const data = await response.json();
-        alert(data.error || "Failed to assign delivery partner");
+        return;
       }
-    } catch (error) {
-      console.error("Error assigning delivery partner:", error);
-      alert("Error assigning delivery partner");
-    } finally {
-      setAssigning(false);
+      const data = await response.json().catch(() => ({}));
+      setError(data.error || "Could not assign this delivery partner.");
+    } catch (err) {
+      console.error("Error assigning delivery partner:", err);
+      setError("Network error while assigning. Please try again.");
     }
+    setAssigningId(null);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-cyan-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5A8DEE] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
+      <div className="min-h-screen bg-surface">
+        <AppHeader role="admin" />
+        <PageLoader />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-cyan-50 pb-20">
-      {/* Header */}
-      <header className="bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white shadow-lg sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-white/20 rounded-lg transition"
-            >
-              <ArrowLeft size={24} />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold">Assign Delivery Partner</h1>
-              <p className="text-sm text-white/80">Order #{order?.orderId}</p>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-surface">
+      <AppHeader role="admin" />
+      <Page className="max-w-4xl">
+        <PageTitle
+          back="/admin/dashboard"
+          title="Assign a delivery partner"
+          subtitle={order ? <span className="font-mono">Order #{order.orderId}</span> : undefined}
+        />
 
-      <div className="container mx-auto px-4 py-6">
-        {/* Order Details */}
-        {order && (
-          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <MapPin className="text-[#5A8DEE]" size={24} />
-              Delivery Address
-            </h2>
-            <div className="space-y-2 text-gray-700">
-              <p className="font-semibold">{order.userName}</p>
-              <p>{order.deliveryAddress.street}</p>
-              <p>
-                {order.deliveryAddress.city}, {order.deliveryAddress.state}{" "}
-                {order.deliveryAddress.zipCode}
-              </p>
-              {order.deliveryAddress.phone && (
-                <p className="flex items-center gap-2 mt-2">
-                  <Phone size={16} />
-                  {order.deliveryAddress.phone}
-                </p>
-              )}
-            </div>
-
-            <div className="mt-4 pt-4 border-t">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total Amount:</span>
-                <span className="text-2xl font-bold text-[#5A8DEE]">
-                  ₹{order.totalAmount.toFixed(2)}
-                </span>
-              </div>
-            </div>
+        {error && (
+          <div className="mb-5">
+            <Alert>{error}</Alert>
           </div>
         )}
 
-        {/* Delivery Partners List */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Truck className="text-[#5A8DEE]" size={24} />
-            Available Delivery Partners
-          </h2>
+        <div className="grid items-start gap-5 lg:grid-cols-[1fr_300px]">
+          {/* Partners */}
+          <section>
+            <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-ink">
+              Available now
+              <span className="badge bg-green-50 text-green-700">{deliveryPartners.length}</span>
+            </h2>
 
-          {deliveryPartners.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-md p-8 text-center">
-              <Truck size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 text-lg">
-                No delivery partners available
-              </p>
-              <p className="text-gray-500 text-sm mt-2">
-                Please check back later or contact delivery partners directly
-              </p>
-            </div>
-          ) : (
-            deliveryPartners.map((partner) => (
-              <div
-                key={partner._id}
-                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-12 h-12 bg-linear-to-br from-[#5A8DEE] to-[#40E0D0] rounded-full flex items-center justify-center text-white font-bold text-xl">
-                        {partner.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-800">
-                          {partner.name}
-                        </h3>
-                        <p className="text-sm text-gray-600">{partner.email}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 space-y-2">
-                      {partner.phone && (
-                        <p className="flex items-center gap-2 text-gray-700">
-                          <Phone size={16} className="text-[#5A8DEE]" />
-                          {partner.phone}
-                        </p>
-                      )}
-                      {partner.vehicleType && (
-                        <p className="flex items-center gap-2 text-gray-700">
-                          <Truck size={16} className="text-[#5A8DEE]" />
-                          {partner.vehicleType}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <CheckCircle
-                          size={16}
-                          className={
-                            partner.isAvailable
-                              ? "text-green-500"
-                              : "text-gray-400"
-                          }
-                        />
-                        <span
-                          className={
-                            partner.isAvailable
-                              ? "text-green-600 font-semibold"
-                              : "text-gray-500"
-                          }
-                        >
-                          {partner.isAvailable ? "Available" : "Busy"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      handleAssignPartner(partner._id, partner.name)
-                    }
-                    disabled={!partner.isAvailable || assigning}
-                    className="px-6 py-3 bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {assigning ? "Assigning..." : "Assign"}
+            {deliveryPartners.length === 0 ? (
+              <EmptyState
+                icon={Truck}
+                title="No delivery partners are online"
+                text="Partners appear here when they go online. Check back in a few minutes."
+                action={
+                  <button onClick={() => window.location.reload()} className="btn btn-secondary">
+                    Check again
                   </button>
-                </div>
+                }
+              />
+            ) : (
+              <ul className="space-y-3">
+                {deliveryPartners.map((partner) => {
+                  const name = partner.name || partner.email || "Partner";
+                  const busy = assigningId === partner._id;
+                  return (
+                    <li key={partner._id} className="card flex flex-wrap items-center gap-4 p-4 sm:p-5">
+                      <span className="relative grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-500 to-accent-500 text-lg font-bold text-white">
+                        {name.charAt(0).toUpperCase()}
+                        <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-green-500 ring-2 ring-white" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-ink">{name}</p>
+                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+                          {partner.vehicleType && (
+                            <span className="inline-flex items-center gap-1.5 capitalize">
+                              <Bike size={14} /> {partner.vehicleType}
+                            </span>
+                          )}
+                          {partner.phone && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <Phone size={14} /> {partner.phone}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleAssignPartner(partner._id, name)}
+                        disabled={!partner.isAvailable || !!assigningId}
+                        className="btn btn-primary w-full sm:w-auto"
+                      >
+                        {busy ? (
+                          <>
+                            <Spinner size={15} /> Assigning…
+                          </>
+                        ) : (
+                          <>
+                            <Truck size={16} /> Assign
+                          </>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
+          {/* Order summary */}
+          {order && (
+            <aside className="card p-5 lg:sticky lg:top-24">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+                <MapPin size={16} className="text-muted" /> Deliver to
+              </h3>
+              <div className="mt-3 space-y-0.5 text-sm text-ink-soft">
+                <p className="font-semibold text-ink">{order.userName}</p>
+                <p>{order.deliveryAddress?.street}</p>
+                <p>
+                  {order.deliveryAddress?.city} {order.deliveryAddress?.zipCode}
+                </p>
+                {order.deliveryAddress?.phone && (
+                  <p className="flex items-center gap-1.5 pt-2 text-muted">
+                    <Phone size={14} /> {order.deliveryAddress.phone}
+                  </p>
+                )}
               </div>
-            ))
+              <ul className="mt-4 space-y-1.5 border-t border-line pt-4 text-sm">
+                {(order.items || []).map((item, i) => (
+                  <li key={i} className="flex justify-between gap-3">
+                    <span className="truncate text-ink-soft">
+                      {item.quantity}× {item.name}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4 flex items-baseline justify-between border-t border-line pt-4">
+                <span className="text-sm text-muted">Order total</span>
+                <span className="text-lg font-bold text-ink">{formatINR(order.totalAmount)}</span>
+              </div>
+            </aside>
           )}
         </div>
-      </div>
+      </Page>
     </div>
   );
 }

@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
-  User,
   Upload,
   FileText,
   Bot,
@@ -12,18 +11,28 @@ import {
   Camera,
   CheckCircle,
   AlertCircle,
-  Mic,
-  Filter,
-  ArrowUpDown,
   Clock,
   ShoppingCart,
   ArrowLeft,
   Plus,
   Minus,
   Heart,
+  MapPin,
+  ChevronRight,
+  Store,
+  Zap,
 } from "lucide-react";
+import {
+  Alert,
+  AppHeader,
+  EmptyState,
+  Modal,
+  Page,
+  SectionTitle,
+  Spinner,
+} from "@/components/ui";
 
-export default function Page() {
+export default function UserHomePage() {
   const router = useRouter();
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
@@ -42,6 +51,8 @@ export default function Page() {
   const [simVoltage, setSimVoltage] = useState(5);
   const [simResistance, setSimResistance] = useState(1000);
   const [simOn, setSimOn] = useState(true);
+  const [query, setQuery] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     // Check authentication and role
@@ -63,6 +74,7 @@ export default function Page() {
       }
       return;
     }
+    setCurrentUser(user);
 
     // Load cart from localStorage
     const savedCart = localStorage.getItem("cart");
@@ -259,6 +271,7 @@ export default function Page() {
   const handleShopClick = (shop) => {
     setSelectedShop(shop);
     setShopPageOpen(true);
+    window.scrollTo({ top: 0 });
   };
 
   // Handle back from shop page
@@ -502,669 +515,513 @@ export default function Page() {
     (product) => product.category === selectedCategory
   );
 
+  const CATEGORIES = [
+    { key: "Resistor", label: "Resistors", image: "/resistors.png" },
+    { key: "Transistors", label: "Transistors", image: "/transistors.png" },
+    { key: "Boards", label: "Boards", image: "/arduino.png" },
+  ];
+
+  const q = query.trim().toLowerCase();
+  const visibleShops = q
+    ? shops.filter((s) => `${s.name} ${s.addr}`.toLowerCase().includes(q))
+    : shops;
+  const visibleProducts = q
+    ? products.filter((p) => `${p.name} ${p.specs} ${p.category}`.toLowerCase().includes(q))
+    : filteredProducts;
+
+  const cartItems = cart.reduce((n, i) => n + (i.quantity || 0), 0);
+  const cartTotal = cart.reduce((n, i) => n + (i.price || 0) * (i.quantity || 0), 0);
+  const firstName = (currentUser?.name || "").split(" ")[0];
+
+  const openCategory = (key) => {
+    setSelectedCategory(key);
+    if (shops.length > 0) handleShopClick(shops[0]);
+  };
+
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center font-sans pb-10">
-      {/* Conditionally render main page or shop page */}
+    <div className="min-h-screen bg-surface pb-28">
+      <AppHeader role="user" cartCount={cartItems} />
+
       {!shopPageOpen ? (
-        <>
-          {/* ---------- HEADER ---------- */}
-          <header className="w-full bg-[#5A8DEE] text-white px-5 py-4 rounded-b-3xl shadow-md">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-lg font-semibold flex items-center gap-2">
-                  <img
-                    src="/ElectroDash.png"
-                    alt="ElectroDash"
-                    className="w-6 h-6"
-                  />
-                  ElectroDash
-                </h1>
-                <p className="text-sm opacity-90">23 minutes</p>
-                <p className="text-xs opacity-80">
-                  HOME – VIT, Sangam Nagar, Wadala (Raj)
-                </p>
-              </div>
-              <div
-                className="bg-white/20 p-2 rounded-full cursor-pointer"
-                onClick={handleProfileClick}
-              >
-                <User size={22} />
-              </div>
-            </div>
-
-            {/* ---------- SEARCH BAR ---------- */}
-            <div className="mt-4">
-              <div className="flex items-center bg-white text-gray-700 rounded-xl px-4 py-2 shadow-md">
-                <Search size={18} className="text-gray-500" />
+        <Page>
+          {/* ---------- WELCOME + SEARCH ---------- */}
+          <section className="relative overflow-hidden rounded-3xl bg-brand-900 px-5 py-7 text-white sm:px-8 sm:py-9">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(55% 80% at 100% 0%, rgb(20 184 166 / .45), transparent 70%), radial-gradient(50% 70% at 0% 100%, rgb(59 111 230 / .6), transparent 70%)",
+              }}
+            />
+            <div className="relative">
+              <p className="flex items-center gap-1.5 text-sm text-brand-100">
+                <MapPin size={15} /> Delivering to VIT, Sangam Nagar, Wadala
+              </p>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
+                {firstName ? `Hi ${firstName}, what are you building today?` : "What are you building today?"}
+              </h1>
+              <div className="mt-5 flex max-w-2xl items-center gap-3 rounded-2xl bg-white px-4 shadow-lift ring-1 ring-black/5">
+                <Search size={20} className="shrink-0 text-muted" />
                 <input
-                  type="text"
-                  placeholder='Search "resistor"'
-                  className="w-full ml-3 outline-none text-sm bg-transparent"
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search shops or parts, e.g. resistor"
+                  className="h-13 w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-slate-400"
+                  aria-label="Search shops or parts"
                 />
+                {query && (
+                  <button onClick={() => setQuery("")} className="text-muted hover:text-ink" aria-label="Clear search">
+                    <X size={18} />
+                  </button>
+                )}
               </div>
             </div>
-          </header>
+          </section>
 
-          {/* ---------- UPLOAD OPTIONS ---------- */}
-          <div className="flex justify-center gap-4 mt-6">
-            <button
-              className="bg-white shadow-md p-4 rounded-2xl flex flex-col items-center w-24 hover:scale-105 transition"
+          {/* ---------- QUICK ACTIONS ---------- */}
+          <section className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <QuickAction
+              icon={Camera}
+              title="Identify by photo"
+              text="Snap a part and find who stocks it"
               onClick={handlePhotoUploadClick}
-            >
-              <Upload className="text-[#5A8DEE]" size={24} />
-              <span className="text-xs mt-2 font-medium text-gray-700 text-center hover:pointer">
-                Upload Photos
-              </span>
-            </button>
-
-            <button className="bg-white shadow-md p-4 rounded-2xl flex flex-col items-center w-24 hover:scale-105 transition">
-              <FileText className="text-[#5A8DEE]" size={24} />
-              <span className="text-xs mt-2 font-medium text-gray-700 text-center hover:pointer">
-                Upload List
-              </span>
-            </button>
-
-            <button
-              className="bg-white shadow-md p-4 rounded-2xl flex flex-col items-center w-24 hover:scale-105 transition"
+            />
+            <QuickAction
+              icon={Bot}
+              title="Ask the AI assistant"
+              text="Specs, alternatives and project help"
               onClick={() => router.push("/ai-chatbot")}
-            >
-              <Bot className="text-[#5A8DEE]" size={24} />
-              <span className="text-xs mt-2 font-medium text-gray-700 text-center hover:pointer">
-                AI Chatbot
-              </span>
-            </button>
-          </div>
+            />
+            <QuickAction icon={FileText} title="Upload a parts list" text="Order a whole BOM at once" soon />
+          </section>
 
-          {/* ---------- TOP CATEGORIES ---------- */}
-          <section className="w-full px-5 mt-8">
-            <h2 className="text-lg font-semibold mb-3 text-gray-800">
-              Top Categories
-            </h2>
-            <div className="flex justify-start gap-4 overflow-x-auto">
-              <div className="bg-[#D9F3F0] rounded-2xl shadow-md px-4 py-3 min-w-[100px] flex flex-col items-center">
-                <img
-                  src="/resistors.png"
-                  alt="Resistor"
-                  className="w-15 h-15 rounded-xl"
-                />
-                <span className="text-sm font-medium mt-2">Resistors</span>
-              </div>
-              <div className="bg-[#D9F3F0] rounded-2xl shadow-md px-4 py-3 min-w-[100px] flex flex-col items-center">
-                <img
-                  src="/transistors.png"
-                  alt="Transistor"
-                  className="w-15 h-15 rounded-xl"
-                />
-                <span className="text-sm font-medium mt-2">Transistors</span>
-              </div>
-              <div className="bg-[#D9F3F0] rounded-2xl shadow-md px-4 py-3 min-w-[100px] flex flex-col items-center">
-                <img
-                  src="/arduino.png"
-                  alt="Boards"
-                  className="w-15 h-15 rounded-xl"
-                />
-                <span className="text-sm font-medium mt-2">Boards</span>
-              </div>
+          {/* ---------- CATEGORIES ---------- */}
+          <section className="mt-10">
+            <SectionTitle>Shop by category</SectionTitle>
+            <div className="grid grid-cols-3 gap-3 sm:max-w-xl">
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c.key}
+                  onClick={() => openCategory(c.key)}
+                  className="card card-hover group flex flex-col items-center gap-3 p-4 text-center"
+                >
+                  <span className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-surface">
+                    <img src={c.image} alt="" className="h-full w-full object-cover transition group-hover:scale-105" />
+                  </span>
+                  <span className="text-sm font-semibold text-ink">{c.label}</span>
+                </button>
+              ))}
             </div>
           </section>
 
           {/* ---------- NEARBY SHOPS ---------- */}
-          <section className="w-full px-5 mt-8">
-            <h2 className="text-lg font-semibold mb-3 text-gray-800">
-              Nearby Shops
-            </h2>
-            <div className="space-y-4">
-              {shops && shops.length > 0 ? (
-                shops.map((shop) => (
-                  <div
-                    key={shop.id || shop.name}
-                    className="bg-white shadow-md rounded-2xl p-4 flex justify-between items-center hover:scale-[1.01] transition cursor-pointer"
-                    onClick={() => handleShopClick(shop)}
-                  >
-                    <div>
-                      <p className="font-semibold text-gray-800">{shop.name}</p>
-                      <p className="text-xs text-gray-500">{shop.addr}</p>
-                    </div>
-                    <span className="bg-[#40E0D0] text-white text-xs font-semibold px-3 py-1 rounded-full">
-                      {shop.time}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500">No shops available</p>
-              )}
-            </div>
-          </section>
-        </>
-      ) : (
-        /* ---------- SHOP SHOPPING PAGE ---------- */
-        <div className="w-full min-h-screen bg-[#5A8DEE]">
-          {/* Header with back button */}
-          <div className="px-5 py-4 flex items-center gap-3 text-white">
-            <button
-              onClick={handleBackFromShop}
-              className="hover:bg-white/20 rounded-full p-2 transition"
+          <section className="mt-10">
+            <SectionTitle
+              action={<span className="text-sm text-muted">{visibleShops.length} open now</span>}
             >
-              <ArrowLeft size={24} />
-            </button>
-            <div>
-              <h1 className="text-lg font-semibold">{selectedShop?.name}</h1>
-              <p className="text-xs opacity-80">{selectedShop?.addr}</p>
-            </div>
-            <div
-              className="ml-auto relative cursor-pointer hover:bg-white/20 rounded-full p-2 transition"
-              onClick={handleCartClick}
-            >
-              <ShoppingCart size={24} />
-              {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                  {cart.length}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Search bar with voice */}
-          <div className="px-5 pb-4">
-            <div className="flex items-center bg-white text-gray-700 rounded-xl px-4 py-3 shadow-md">
-              <Search size={18} className="text-gray-500" />
-              <input
-                type="text"
-                placeholder='Search "resistor"'
-                className="w-full ml-3 outline-none text-sm bg-transparent"
-              />
-              <Mic
-                size={20}
-                className="text-gray-500 cursor-pointer hover:text-[#5A8DEE]"
-              />
-            </div>
-          </div>
-
-          {/* Main content area */}
-          <div className="bg-white rounded-t-3xl min-h-screen px-5 pt-5">
-            {/* Top Categories */}
-            <div className="flex justify-start gap-3 overflow-x-auto mb-5 pb-2">
-              <div
-                className={`rounded-2xl shadow-md px-6 py-4 min-w-[120px] flex flex-col items-center cursor-pointer transition ${
-                  selectedCategory === "Resistor"
-                    ? "bg-[#A8E6A1] border-2 border-green-600"
-                    : "bg-[#D9F3F0]"
-                }`}
-                onClick={() => setSelectedCategory("Resistor")}
-              >
-                <img
-                  src="/resistors.png"
-                  alt="Resistor"
-                  className="w-12 h-12"
-                />
-                <span className="text-sm font-bold mt-2">Resistor</span>
-              </div>
-              <div
-                className={`rounded-2xl shadow-md px-6 py-4 min-w-[120px] flex flex-col items-center cursor-pointer transition ${
-                  selectedCategory === "Transistors"
-                    ? "bg-[#D9E8F5] border-2 border-blue-600"
-                    : "bg-[#D9F3F0]"
-                }`}
-                onClick={() => setSelectedCategory("Transistors")}
-              >
-                <img
-                  src="/transistors.png"
-                  alt="Transistor"
-                  className="w-12 h-12"
-                />
-                <span className="text-sm font-bold mt-2">Transistors</span>
-              </div>
-              <div
-                className={`rounded-2xl shadow-md px-6 py-4 min-w-[120px] flex flex-col items-center cursor-pointer transition ${
-                  selectedCategory === "Boards"
-                    ? "bg-[#F5E8D9] border-2 border-orange-600"
-                    : "bg-[#D9F3F0]"
-                }`}
-                onClick={() => setSelectedCategory("Boards")}
-              >
-                <img
-                  src="https://cdn-icons-png.flaticon.com/512/2521/2521673.png"
-                  alt="Boards"
-                  className="w-12 h-12"
-                />
-                <span className="text-sm font-bold mt-2">Boards</span>
-              </div>
-            </div>
-
-            {/* Filters and Sort */}
-            <div className="flex gap-3 mb-5">
-              <button className="flex items-center gap-2 border-2 border-[#5A8DEE] text-[#5A8DEE] px-4 py-2 rounded-xl font-semibold hover:bg-[#5A8DEE] hover:text-white transition">
-                <Filter size={18} />
-                Filters
-              </button>
-              <button className="flex items-center gap-2 border-2 border-[#5A8DEE] text-[#5A8DEE] px-4 py-2 rounded-xl font-semibold hover:bg-[#5A8DEE] hover:text-white transition">
-                <ArrowUpDown size={18} />
-                Sort by
-              </button>
-            </div>
-
-            {/* Products Grid */}
-            <div className="grid grid-cols-2 gap-4 pb-6">
-              {filteredProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-md hover:shadow-xl transition relative"
-                >
-                  {/* Favorite Heart Icon */}
+              Nearby shops
+            </SectionTitle>
+            {visibleShops.length > 0 ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {visibleShops.map((shop) => (
                   <button
-                    onClick={() => toggleFavorite(product)}
-                    className="absolute top-3 right-3 bg-white/90 hover:bg-white rounded-full p-2 shadow-md transition z-10"
+                    key={shop.id || shop.name}
+                    onClick={() => handleShopClick(shop)}
+                    className="card card-hover group flex items-center gap-4 p-4 text-left"
                   >
-                    <Heart
-                      size={18}
-                      className={
-                        isFavorite(product.id)
-                          ? "text-red-500"
-                          : "text-gray-400"
-                      }
-                      fill={isFavorite(product.id) ? "currentColor" : "none"}
-                    />
-                  </button>
-
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-32 object-contain mb-3"
-                  />
-                  <h3 className="font-bold text-sm text-gray-800 mb-1">
-                    {product.name}
-                  </h3>
-                  <p className="text-xs text-gray-600 mb-2">{product.specs}</p>
-                  <div className="flex items-center gap-1 text-xs text-gray-600 mb-3">
-                    <Clock size={14} />
-                    <span>{product.time}</span>
-                  </div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[#5A8DEE] font-bold text-lg">
-                      ₹{product.price}
+                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-lg font-bold text-white">
+                      {shop.name?.[0] || "S"}
                     </span>
-                  </div>
-                  {/* Quantity Controls */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 border-2 border-gray-300 rounded-lg p-1">
-                      <button
-                        onClick={() => decreaseQuantity(product.id)}
-                        className="bg-gray-200 hover:bg-gray-300 rounded p-1 transition"
-                        disabled={getProductQuantity(product.id) === 0}
-                      >
-                        <Minus size={16} />
-                      </button>
-                      <span className="font-semibold text-lg w-8 text-center">
-                        {getProductQuantity(product.id)}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold text-ink">{shop.name}</span>
+                      <span className="mt-0.5 block truncate text-xs text-muted">{shop.addr || "Address not added"}</span>
+                      <span className="badge mt-2 h-6 bg-accent-50 text-accent-700">
+                        <Clock size={12} /> {shop.time}
                       </span>
-                      <button
-                        onClick={() => increaseQuantity(product.id)}
-                        className="bg-[#5A8DEE] hover:bg-[#4A7DDE] text-white rounded p-1 transition"
-                      >
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                    {getProductQuantity(product.id) > 0 && (
-                      <button
-                        onClick={() => resetQuantity(product.id)}
-                        className="bg-red-500 text-white font-bold px-3 py-2 rounded-lg hover:bg-red-600 transition text-sm"
-                      >
-                        RESET
-                      </button>
-                    )}
-                  </div>
-                  {/* Show Simulation Button */}
-                  <div className="mt-3">
-                    <button
-                      onClick={() => openSimulation(product)}
-                      className="w-full mt-2 border-2 border-[#5A8DEE] text-[#5A8DEE] px-3 py-2 rounded-lg font-semibold hover:bg-[#5A8DEE] hover:text-white transition text-sm"
-                    >
-                      Show Simulation
-                    </button>
-                  </div>
-                </div>
-              ))}
+                    </span>
+                    <ChevronRight size={18} className="shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500" />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Store}
+                title={q ? "No shops match your search" : "No shops yet"}
+                text={q ? "Try a different name." : "New shops will appear here as soon as they join."}
+              />
+            )}
+          </section>
+        </Page>
+      ) : (
+        /* ---------- SHOP PAGE ---------- */
+        <Page>
+          <div className="card mb-6 flex flex-wrap items-center gap-4 p-4 sm:p-5">
+            <button onClick={handleBackFromShop} className="btn btn-secondary btn-icon shrink-0" aria-label="Back to shops">
+              <ArrowLeft size={18} />
+            </button>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-lg font-bold text-white">
+              {selectedShop?.name?.[0] || "S"}
+            </span>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-xl font-bold tracking-tight text-ink">{selectedShop?.name}</h1>
+              <p className="truncate text-sm text-muted">{selectedShop?.addr}</p>
+            </div>
+            <span className="badge h-7 bg-accent-50 px-3 text-accent-700">
+              <Clock size={14} /> Delivery in {selectedShop?.time}
+            </span>
+          </div>
+
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              {CATEGORIES.map((c) => {
+                const active = !q && selectedCategory === c.key;
+                return (
+                  <button
+                    key={c.key}
+                    onClick={() => {
+                      setQuery("");
+                      setSelectedCategory(c.key);
+                    }}
+                    className={`flex h-11 shrink-0 items-center gap-2 rounded-full border pl-1.5 pr-4 text-sm font-semibold transition ${
+                      active
+                        ? "border-brand-600 bg-brand-600 text-white"
+                        : "border-line bg-white text-ink-soft hover:border-slate-300"
+                    }`}
+                  >
+                    <img src={c.image} alt="" className="h-8 w-8 rounded-full object-cover" />
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex h-11 items-center gap-2 rounded-xl border border-line bg-white px-3 sm:w-72">
+              <Search size={18} className="text-muted" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search in this shop"
+                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+                aria-label="Search in this shop"
+              />
             </div>
           </div>
+
+          {visibleProducts.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {visibleProducts.map((product) => {
+                const qty = getProductQuantity(product.id);
+                const fav = isFavorite(product.id);
+                return (
+                  <div key={product.id} className="card card-hover flex flex-col overflow-hidden">
+                    <div className="relative aspect-[4/3] bg-surface">
+                      <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                      <button
+                        onClick={() => toggleFavorite(product)}
+                        className="absolute right-2.5 top-2.5 grid h-9 w-9 place-items-center rounded-full bg-white/95 shadow-card transition hover:scale-105"
+                        aria-label={fav ? "Remove from favourites" : "Add to favourites"}
+                        aria-pressed={fav}
+                      >
+                        <Heart size={17} className={fav ? "text-red-500" : "text-slate-400"} fill={fav ? "currentColor" : "none"} />
+                      </button>
+                      <span className="badge absolute bottom-2.5 left-2.5 bg-white/95 text-ink-soft shadow-card">
+                        <Clock size={12} /> {product.time}
+                      </span>
+                    </div>
+                    <div className="flex flex-1 flex-col p-3.5 sm:p-4">
+                      <h3 className="text-sm font-semibold leading-snug text-ink">{product.name}</h3>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted">{product.specs}</p>
+                      <div className="mt-auto flex items-center justify-between gap-2 pt-4">
+                        <span className="text-lg font-bold text-ink">₹{product.price}</span>
+                        {qty === 0 ? (
+                          <button onClick={() => increaseQuantity(product.id)} className="btn btn-soft btn-sm px-4">
+                            <Plus size={15} /> Add
+                          </button>
+                        ) : (
+                          <div className="flex h-8 items-center rounded-[10px] bg-brand-600 text-white">
+                            <button
+                              onClick={() => decreaseQuantity(product.id)}
+                              className="grid h-8 w-8 place-items-center rounded-l-[10px] hover:bg-brand-700"
+                              aria-label={`Remove one ${product.name}`}
+                            >
+                              <Minus size={15} />
+                            </button>
+                            <span className="w-6 text-center text-sm font-bold tabular-nums" aria-live="polite">
+                              {qty}
+                            </span>
+                            <button
+                              onClick={() => increaseQuantity(product.id)}
+                              className="grid h-8 w-8 place-items-center rounded-r-[10px] hover:bg-brand-700"
+                              aria-label={`Add one ${product.name}`}
+                            >
+                              <Plus size={15} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
+                        <button
+                          onClick={() => openSimulation(product)}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
+                        >
+                          <Zap size={14} /> Try simulation
+                        </button>
+                        {qty > 0 && (
+                          <button
+                            onClick={() => resetQuantity(product.id)}
+                            className="text-xs font-medium text-muted hover:text-red-600"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState icon={Search} title="No parts match your search" text="Try a different part name or value." />
+          )}
+        </Page>
+      )}
+
+      {/* ---------- FLOATING CART BAR ---------- */}
+      {cartItems > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-30 px-4 pb-4 sm:pb-6">
+          <button
+            onClick={handleCartClick}
+            className="mx-auto flex w-full max-w-xl animate-fade-up items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-left text-white shadow-pop transition hover:bg-slate-800"
+          >
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/10">
+              <ShoppingCart size={20} />
+            </span>
+            <span className="flex-1">
+              <span className="block text-sm font-semibold">
+                {cartItems} item{cartItems === 1 ? "" : "s"} · ₹{cartTotal}
+              </span>
+              <span className="hidden text-xs text-slate-300 sm:block">Delivery fee added at checkout</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-sm font-semibold">
+              View cart <ChevronRight size={18} />
+            </span>
+          </button>
         </div>
       )}
 
       {/* ---------- PHOTO UPLOAD MODAL ---------- */}
-      {photoModalOpen && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white px-6 py-4 rounded-t-3xl flex justify-between items-center">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <Camera size={24} />
-                Upload Component Photo
-              </h3>
+      <Modal open={photoModalOpen} onClose={handlePhotoModalClose} title="Identify a part by photo" icon={Camera} maxWidth="max-w-md">
+        {!imagePreview ? (
+          <div
+            className="cursor-pointer rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/50 px-6 py-10 text-center transition hover:border-brand-400 hover:bg-brand-50"
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onClick={() => document.getElementById("photo-upload-input").click()}
+            role="button"
+            tabIndex={0}
+          >
+            <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-white text-brand-600 shadow-card">
+              <Upload size={26} />
+            </span>
+            <p className="font-semibold text-ink">Click or drag a photo here</p>
+            <p className="mt-1 text-sm text-muted">JPG or PNG of a single component works best</p>
+            <input id="photo-upload-input" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+          </div>
+        ) : (
+          <div>
+            <div className="relative overflow-hidden rounded-2xl bg-surface">
+              <img src={imagePreview} alt="Uploaded component" className="h-60 w-full object-cover" />
               <button
-                onClick={handlePhotoModalClose}
-                className="hover:bg-white/20 rounded-full p-1 transition"
+                onClick={() => {
+                  setImagePreview(null);
+                  setUploadedImage(null);
+                  setDetectionResult(null);
+                }}
+                className="absolute right-2.5 top-2.5 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-ink shadow-card hover:text-red-600"
+                aria-label="Remove photo"
               >
-                <X size={24} />
+                <X size={18} />
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6">
-              {/* Upload Area */}
-              {!imagePreview ? (
-                <div
-                  className="border-3 border-dashed border-[#5A8DEE] rounded-2xl p-8 text-center bg-linear-to-br from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 transition cursor-pointer"
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onClick={() =>
-                    document.getElementById("photo-upload-input").click()
-                  }
-                >
-                  <Upload className="mx-auto text-[#5A8DEE] mb-4" size={48} />
-                  <p className="text-gray-700 font-semibold mb-2">
-                    Click or drag to upload
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Upload a photo of your hardware component
-                  </p>
-                  <input
-                    id="photo-upload-input"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                </div>
-              ) : (
-                <div>
-                  {/* Image Preview */}
-                  <div className="relative rounded-2xl overflow-hidden shadow-lg mb-4">
-                    <img
-                      src={imagePreview}
-                      alt="Uploaded component"
-                      className="w-full h-64 object-cover"
-                    />
-                    <button
-                      onClick={() => {
-                        setImagePreview(null);
-                        setUploadedImage(null);
-                        setDetectionResult(null);
-                      }}
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition"
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
+            {!detectionResult && (
+              <button onClick={handleAnalyzeImage} disabled={isAnalyzing} className="btn btn-primary btn-lg mt-4 w-full">
+                {isAnalyzing ? (
+                  <>
+                    <Spinner size={16} /> Analyzing photo…
+                  </>
+                ) : (
+                  "Detect component"
+                )}
+              </button>
+            )}
 
-                  {/* Analyze Button */}
-                  {!detectionResult && (
-                    <button
-                      onClick={handleAnalyzeImage}
-                      disabled={isAnalyzing}
-                      className="w-full bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white py-3 rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isAnalyzing ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          Analyzing...
-                        </span>
-                      ) : (
-                        "Detect Component"
-                      )}
-                    </button>
-                  )}
-
-                  {/* Detection Results */}
-                  {detectionResult && detectionResult.success && (
-                    <div className="mt-4 space-y-3">
-                      <div className="flex items-center gap-2 text-green-600 font-semibold mb-3">
-                        <CheckCircle size={24} />
-                        <span>Components Detected!</span>
-                      </div>
-
-                      {detectionResult.results.map((result, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-linear-to-r from-green-50 to-cyan-50 rounded-xl p-4 border border-green-200"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <h4 className="font-bold text-gray-800">
-                                {result.componentName}
-                              </h4>
-                              <p className="text-sm text-gray-600">
-                                Confidence: {result.confidence}%
-                              </p>
-                            </div>
-                            <span className="bg-[#40E0D0] text-white text-xs font-bold px-3 py-1 rounded-full">
-                              ₹{result.price}
-                            </span>
+            {detectionResult && detectionResult.success && (
+              <div className="mt-5 space-y-3">
+                <p className="flex items-center gap-2 text-sm font-semibold text-green-700">
+                  <CheckCircle size={18} /> We found {detectionResult.results.length} possible matches
+                </p>
+                {detectionResult.results.map((result, idx) => (
+                  <div key={idx} className="rounded-2xl border border-line p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-ink">{result.componentName}</p>
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+                            <div className="h-full rounded-full bg-accent-500" style={{ width: `${result.confidence}%` }} />
                           </div>
-
-                          {result.available ? (
-                            <div>
-                              <p className="text-sm text-green-700 font-semibold mb-1">
-                                Available at:
-                              </p>
-                              <ul className="text-sm text-gray-700 space-y-1">
-                                {result.shops.map((shop, i) => (
-                                  <li
-                                    key={i}
-                                    className="flex items-center gap-2"
-                                  >
-                                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                                    {shop}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ) : (
-                            <p className="text-sm text-red-600 flex items-center gap-1">
-                              <AlertCircle size={16} />
-                              Not available
-                            </p>
-                          )}
+                          <span className="text-xs text-muted">{result.confidence}% match</span>
                         </div>
-                      ))}
-
-                      <button
-                        onClick={handlePhotoModalClose}
-                        className="w-full bg-linear-to-r from-[#5A8DEE] to-[#40E0D0] text-white py-3 rounded-xl font-semibold hover:shadow-lg transition mt-4"
-                      >
-                        Browse Shops
-                      </button>
+                      </div>
+                      <span className="text-base font-bold text-ink">₹{result.price}</span>
                     </div>
-                  )}
-
-                  {detectionResult && !detectionResult.success && (
-                    <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-2 text-red-700">
-                      <AlertCircle size={20} />
-                      <p>
-                        Could not detect any components. Please try another
-                        image.
+                    {result.available ? (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {result.shops.map((shop, i) => (
+                          <span key={i} className="badge bg-green-50 text-green-700">
+                            <Store size={12} /> {shop}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-3 flex items-center gap-1 text-sm text-red-600">
+                        <AlertCircle size={16} /> Not available nearby
                       </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                    )}
+                  </div>
+                ))}
+                <button onClick={handlePhotoModalClose} className="btn btn-primary btn-lg w-full">
+                  Browse shops
+                </button>
+              </div>
+            )}
+
+            {detectionResult && !detectionResult.success && (
+              <div className="mt-4">
+                <Alert>Could not detect any components. Please try another photo.</Alert>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* ---------- SIMULATION MODAL ---------- */}
-      {simulationOpen && simulationProduct && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">
-                Simulation: {simulationProduct.name}
-              </h3>
-              <button
-                onClick={closeSimulation}
-                className="rounded-full p-2 hover:bg-gray-100"
-              >
-                <X />
-              </button>
-            </div>
-
-            {/* Controls */}
-            <div className="mb-4 grid grid-cols-2 gap-4">
+      <Modal
+        open={simulationOpen && !!simulationProduct}
+        onClose={closeSimulation}
+        title={simulationProduct ? `Simulate: ${simulationProduct.name}` : ""}
+        icon={Zap}
+        maxWidth="max-w-2xl"
+      >
+        {simulationProduct && (
+          <div className="grid gap-6 md:grid-cols-[1fr_1.2fr]">
+            <div className="space-y-5">
               <div>
-                <label className="text-sm font-medium">Voltage (V)</label>
+                <div className="flex items-center justify-between">
+                  <label className="field-label mb-0" htmlFor="sim-voltage">Voltage</label>
+                  <span className="text-sm font-semibold tabular-nums text-ink">{simVoltage} V</span>
+                </div>
                 <input
+                  id="sim-voltage"
                   type="range"
                   min={0}
                   max={12}
                   value={simVoltage}
                   onChange={(e) => setSimVoltage(Number(e.target.value))}
-                  className="w-full mt-2"
+                  className="mt-2 w-full accent-brand-600"
                 />
-                <div className="text-sm mt-1">{simVoltage} V</div>
               </div>
 
               {simulationProduct.category === "Resistor" && (
                 <div>
-                  <label className="text-sm font-medium">Resistance (Ω)</label>
+                  <div className="flex items-center justify-between">
+                    <label className="field-label mb-0" htmlFor="sim-resistance">Resistance</label>
+                    <span className="text-sm font-semibold tabular-nums text-ink">{simResistance.toLocaleString()} Ω</span>
+                  </div>
                   <input
+                    id="sim-resistance"
                     type="range"
                     min={10}
                     max={100000}
                     step={10}
                     value={simResistance}
                     onChange={(e) => setSimResistance(Number(e.target.value))}
-                    className="w-full mt-2"
+                    className="mt-2 w-full accent-brand-600"
                   />
-                  <div className="text-sm mt-1">
-                    {simResistance.toLocaleString()} Ω
-                  </div>
                 </div>
               )}
+
+              <label className="flex cursor-pointer items-center justify-between rounded-xl border border-line px-4 py-3">
+                <span className="text-sm font-semibold text-ink">Power</span>
+                <span className="relative inline-flex">
+                  <input type="checkbox" checked={simOn} onChange={(e) => setSimOn(e.target.checked)} className="peer sr-only" />
+                  <span className="h-6 w-11 rounded-full bg-slate-200 transition peer-checked:bg-accent-500" />
+                  <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5" />
+                </span>
+              </label>
+
+              <p className="text-sm text-muted">
+                Category: <span className="font-medium text-ink">{simulationProduct.category}</span>. Change the values and toggle
+                power to see how the LED responds.
+              </p>
             </div>
 
-            {/* Circuit switch and visualization */}
-            <div className="flex gap-6 items-start">
-              <div className="w-1/3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={simOn}
-                    onChange={(e) => setSimOn(e.target.checked)}
-                  />
-                  <span className="text-sm">Power</span>
-                </label>
-
-                <div className="mt-4 text-sm text-gray-600">
-                  <p>Category: {simulationProduct.category}</p>
-                  <p className="mt-2">
-                    Toggle power to see the effect on the component.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex-1">
-                {/* Simple visual: LED that changes brightness based on voltage and resistance */}
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-full bg-gray-100 rounded-lg p-4 flex flex-col items-center">
-                    <div className="mb-3 text-sm text-gray-700">
-                      Breadboard Preview
-                    </div>
-                    <svg
-                      width="260"
-                      height="120"
-                      viewBox="0 0 260 120"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <rect
-                        x="10"
-                        y="10"
-                        width="240"
-                        height="100"
-                        rx="8"
-                        fill="#f8fafc"
-                        stroke="#e5e7eb"
-                      />
-                      {/* Power rails */}
-                      <rect
-                        x="18"
-                        y="20"
-                        width="8"
-                        height="80"
-                        fill="#fde68a"
-                      />
-                      <rect
-                        x="234"
-                        y="20"
-                        width="8"
-                        height="80"
-                        fill="#bfdbfe"
-                      />
-
-                      {/* LED simulation - a circle whose fill opacity represents brightness */}
-                      {(() => {
-                        const on = simOn;
-                        let brightness = 0;
-                        if (on) {
-                          if (simulationProduct.category === "Resistor") {
-                            // simple inverse relation to resistance
-                            const r = Math.max(1, simResistance);
-                            brightness = Math.min(
-                              1,
-                              simVoltage / (r / 1000 + simVoltage)
-                            );
-                          } else if (
-                            simulationProduct.category === "Transistors"
-                          ) {
-                            // transistor: quick on/off depending on voltage
-                            brightness = simVoltage > 1.5 ? 1 : 0.1;
-                          } else {
-                            // boards or others: show moderate indicator
-                            brightness = simVoltage > 0 ? 0.7 : 0;
-                          }
-                        } else {
-                          brightness = 0;
-                        }
-
-                        const fill = `rgba(255,99,71,${
-                          0.2 + 0.8 * brightness
-                        })`;
-                        return (
-                          <g>
-                            <circle
-                              cx="130"
-                              cy="60"
-                              r="18"
-                              fill={fill}
-                              stroke="#ef4444"
-                              strokeWidth="2"
-                            />
-                            <line
-                              x1="130"
-                              y1="78"
-                              x2="130"
-                              y2="98"
-                              stroke="#374151"
-                              strokeWidth="2"
-                            />
-                            <text
-                              x="130"
-                              y="20"
-                              fontSize="12"
-                              textAnchor="middle"
-                              fill="#374151"
-                            >
-                              LED
-                            </text>
-                          </g>
-                        );
-                      })()}
-                    </svg>
-                  </div>
-                </div>
-              </div>
+            <div className="rounded-2xl bg-slate-900 p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Breadboard preview</p>
+              <svg viewBox="0 0 260 120" className="w-full" xmlns="http://www.w3.org/2000/svg">
+                <rect x="10" y="10" width="240" height="100" rx="8" fill="#f8fafc" stroke="#e5e7eb" />
+                <rect x="18" y="20" width="8" height="80" fill="#fde68a" />
+                <rect x="234" y="20" width="8" height="80" fill="#bfdbfe" />
+                {(() => {
+                  let brightness = 0;
+                  if (simOn) {
+                    if (simulationProduct.category === "Resistor") {
+                      const r = Math.max(1, simResistance);
+                      brightness = Math.min(1, simVoltage / (r / 1000 + simVoltage));
+                    } else if (simulationProduct.category === "Transistors") {
+                      brightness = simVoltage > 1.5 ? 1 : 0.1;
+                    } else {
+                      brightness = simVoltage > 0 ? 0.7 : 0;
+                    }
+                  }
+                  const fill = `rgba(255,99,71,${0.2 + 0.8 * brightness})`;
+                  return (
+                    <g>
+                      {brightness > 0.3 && <circle cx="130" cy="60" r={26 + 10 * brightness} fill={`rgba(255,99,71,${0.25 * brightness})`} />}
+                      <circle cx="130" cy="60" r="18" fill={fill} stroke="#ef4444" strokeWidth="2" />
+                      <line x1="130" y1="78" x2="130" y2="98" stroke="#374151" strokeWidth="2" />
+                      <text x="130" y="30" fontSize="11" textAnchor="middle" fill="#374151">LED</text>
+                    </g>
+                  );
+                })()}
+              </svg>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
+  );
+}
+
+function QuickAction({ icon: Icon, title, text, onClick, soon }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={soon}
+      className={`card flex items-center gap-4 p-4 text-left ${soon ? "cursor-default opacity-70" : "card-hover"}`}
+    >
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">
+        <Icon size={22} />
+      </span>
+      <span className="min-w-0">
+        <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+          {title}
+          {soon && <span className="badge h-5 bg-slate-100 px-2 text-[10px] text-muted">Soon</span>}
+        </span>
+        <span className="mt-0.5 block text-xs text-muted">{text}</span>
+      </span>
+    </button>
   );
 }

@@ -6,13 +6,13 @@ import {
   CheckCircle,
   Download,
   Home,
-  Package,
   Store,
   Calendar,
   CreditCard,
   MapPin,
-  Phone,
+  Truck,
 } from "lucide-react";
+import { AppHeader, Page, PageLoader, formatINR } from "@/components/ui";
 
 export default function OrderSuccessPage() {
   const router = useRouter();
@@ -42,20 +42,23 @@ export default function OrderSuccessPage() {
     const savedOrderData = sessionStorage.getItem("lastOrder");
     if (savedOrderData) {
       const order = JSON.parse(savedOrderData);
-      const orderId = generateOrderId();
-      
-      // Create order with ID and status
-      const orderWithId = {
-        ...order,
-        orderId: orderId,
-        date: new Date().toISOString(),
-        status: "Processing"
-      };
-      
+
+      // If this order already got an ID (page was refreshed), reuse it and don't save it again
+      const alreadySaved = Boolean(order.orderId);
+      const orderWithId = alreadySaved
+        ? order
+        : {
+            ...order,
+            orderId: generateOrderId(),
+            date: new Date().toISOString(),
+            status: "Processing",
+          };
+      sessionStorage.setItem("lastOrder", JSON.stringify(orderWithId));
+
       setOrderData(orderWithId);
-      
+
       // Save order to database and localStorage (only save once using ref)
-      if (!orderSavedRef.current) {
+      if (!alreadySaved && !orderSavedRef.current) {
         // Save to database
         saveOrderToDatabase(orderWithId, user, token);
         
@@ -112,8 +115,8 @@ export default function OrderSuccessPage() {
   };
 
   // Get current date and time
-  const getOrderDateTime = () => {
-    const now = new Date();
+  const getOrderDateTime = (when) => {
+    const now = when ? new Date(when) : new Date();
     return {
       date: now.toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -145,8 +148,8 @@ export default function OrderSuccessPage() {
   const handleDownloadReceipt = () => {
     if (!orderData) return;
 
-    const orderId = generateOrderId();
-    const { date, time } = getOrderDateTime();
+    const orderId = orderData.orderId;
+    const { date, time } = getOrderDateTime(orderData.date);
     const groupedCart = groupByShop();
 
     const receiptHTML = `
@@ -376,192 +379,145 @@ export default function OrderSuccessPage() {
   };
 
   if (!orderData) {
-    return (
-      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5A8DEE] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader label="Confirming your order…" />;
   }
 
-  const orderId = generateOrderId();
-  const { date, time } = getOrderDateTime();
+  const orderId = orderData.orderId;
+  const { date, time } = getOrderDateTime(orderData.date);
   const groupedCart = groupByShop();
+  const a = orderData.address || {};
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center font-sans pb-10">
-      {/* Success Animation */}
-      <div className="w-full bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white px-5 py-12 rounded-b-3xl shadow-md text-center">
-        <div className="animate-bounce mb-4">
-          <CheckCircle size={80} className="mx-auto" />
-        </div>
-        <h1 className="text-3xl font-bold mb-2">Order Placed Successfully!</h1>
-        <p className="text-lg opacity-90">
-          Thank you for your purchase. Your order is confirmed.
-        </p>
-      </div>
-
-      {/* Receipt Container */}
-      <div className="w-full max-w-3xl px-5 mt-8">
-        <div ref={receiptRef} className="bg-white rounded-2xl shadow-lg p-8">
-          {/* Order Header */}
-          <div className="border-b-2 border-gray-200 pb-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Order Receipt</h2>
-              <div className="bg-green-100 text-green-800 px-4 py-2 rounded-full font-semibold text-sm">
-                CONFIRMED
-              </div>
-            </div>
-
-            {/* Order Details Grid */}
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <div className="flex items-start gap-3">
-                <Package size={20} className="text-[#5A8DEE] mt-1" />
-                <div>
-                  <p className="text-sm text-gray-600">Order ID</p>
-                  <p className="font-semibold text-gray-800">{orderId}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Calendar size={20} className="text-[#5A8DEE] mt-1" />
-                <div>
-                  <p className="text-sm text-gray-600">Date & Time</p>
-                  <p className="font-semibold text-gray-800">
-                    {date}, {time}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <CreditCard size={20} className="text-[#5A8DEE] mt-1" />
-                <div>
-                  <p className="text-sm text-gray-600">Payment Method</p>
-                  <p className="font-semibold text-gray-800 capitalize">
-                    {orderData.paymentMethod}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <MapPin size={20} className="text-[#5A8DEE] mt-1" />
-                <div>
-                  <p className="text-sm text-gray-600">Delivery Address</p>
-                  <p className="font-semibold text-gray-800 text-sm">
-                    {orderData.address?.name}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    {orderData.address?.addressLine1}
-                    {orderData.address?.addressLine2 && `, ${orderData.address.addressLine2}`}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    {orderData.address?.city} - {orderData.address?.pincode}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    Ph: {orderData.address?.phone}
-                  </p>
-                </div>
-              </div>
+    <div className="min-h-screen bg-surface">
+      <AppHeader role="user" cartCount={0} />
+      <Page className="max-w-3xl">
+        {/* Success hero */}
+        <section className="card relative overflow-hidden px-6 py-10 text-center">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(60% 70% at 50% 0%, rgb(207 250 240 / .8), transparent 70%)",
+            }}
+          />
+          <div className="relative">
+            <span className="mx-auto grid h-16 w-16 animate-fade-up place-items-center rounded-full bg-green-600 text-white shadow-[0_10px_30px_-8px_rgb(22_163_74/.6)]">
+              <CheckCircle size={34} />
+            </span>
+            <h1 className="mt-5 text-2xl font-bold tracking-tight text-ink sm:text-3xl">Order placed!</h1>
+            <p className="mt-2 text-muted">
+              Thanks{a.name ? `, ${a.name.split(" ")[0]}` : ""}. Your parts are on their way in about 20–30 minutes.
+            </p>
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-sm ring-1 ring-line">
+              <span className="text-muted">Order ID</span>
+              <span className="font-mono font-semibold text-ink">{orderId}</span>
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <button
+                onClick={() => {
+                  sessionStorage.removeItem("lastOrder");
+                  router.push(`/user/track-order?orderId=${encodeURIComponent(orderId)}`);
+                }}
+                className="btn btn-primary btn-lg"
+              >
+                <Truck size={18} /> Track order
+              </button>
+              <button onClick={handleDownloadReceipt} className="btn btn-secondary btn-lg">
+                <Download size={18} /> Receipt
+              </button>
             </div>
           </div>
+        </section>
 
-          {/* Order Items */}
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Order Items</h3>
+        {/* Details */}
+        <section className="card mt-5 grid gap-5 p-5 sm:grid-cols-3 sm:p-6">
+          <Detail icon={Calendar} label="Placed on" value={`${date}, ${time}`} />
+          <Detail icon={CreditCard} label="Payment" value={orderData.paymentMethod} />
+          <Detail
+            icon={MapPin}
+            label="Delivering to"
+            value={
+              <>
+                {a.addressLine1}
+                {a.addressLine2 ? `, ${a.addressLine2}` : ""}
+                <br />
+                {a.city} {a.pincode}
+              </>
+            }
+          />
+        </section>
+
+        {/* Items */}
+        <section className="card mt-5 p-5 sm:p-6">
+          <h2 className="font-semibold text-ink">Items</h2>
+          <div className="mt-4 space-y-5">
             {Object.entries(groupedCart).map(([shopName, items]) => (
-              <div
-                key={shopName}
-                className="mb-6 last:mb-0 border border-gray-200 rounded-xl p-4"
-              >
-                {/* Shop Name */}
-                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
-                  <Store size={18} className="text-gray-500" />
-                  <span className="font-semibold text-gray-700">{shopName}</span>
-                </div>
-
-                {/* Items */}
-                <div className="space-y-3">
+              <div key={shopName}>
+                <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+                  <Store size={14} /> {shopName}
+                </p>
+                <ul className="divide-y divide-line">
                   {items.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between py-2"
-                    >
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-800 text-sm">
-                          {item.name}
-                        </p>
-                        <p className="text-xs text-gray-600">{item.specs}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Qty: {item.quantity} × ₹{item.price}
+                    <li key={idx} className="flex items-center gap-4 py-3">
+                      {item.image && (
+                        <img src={item.image} alt="" className="h-12 w-12 rounded-xl bg-surface object-cover" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
+                        <p className="text-xs text-muted">
+                          {item.quantity} × {formatINR(item.price)}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-[#5A8DEE]">
-                          ₹{item.price * item.quantity}
-                        </p>
-                      </div>
-                    </div>
+                      <p className="text-sm font-semibold text-ink">{formatINR(item.price * item.quantity)}</p>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             ))}
           </div>
 
-          {/* Price Summary */}
-          <div className="bg-gray-50 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">
-              Payment Summary
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between text-gray-700">
-                <span>Subtotal</span>
-                <span>₹{orderData.subtotal}</span>
-              </div>
-              <div className="flex justify-between text-gray-700">
-                <span>Delivery Fee</span>
-                <span>₹{orderData.deliveryFee}</span>
-              </div>
-              {orderData.discount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Discount</span>
-                  <span>-₹{orderData.discount}</span>
-                </div>
-              )}
-              <hr />
-              <div className="flex justify-between text-xl font-bold text-gray-800">
-                <span>Total Paid</span>
-                <span className="text-[#5A8DEE]">₹{orderData.total}</span>
-              </div>
+          <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
+            <div className="flex justify-between">
+              <dt className="text-muted">Subtotal</dt>
+              <dd className="text-ink">{formatINR(orderData.subtotal)}</dd>
             </div>
-          </div>
+            <div className="flex justify-between">
+              <dt className="text-muted">Delivery fee</dt>
+              <dd className="text-ink">{formatINR(orderData.deliveryFee)}</dd>
+            </div>
+            {orderData.discount > 0 && (
+              <div className="flex justify-between text-green-700">
+                <dt>Discount{orderData.appliedCoupon ? ` (${orderData.appliedCoupon})` : ""}</dt>
+                <dd>−{formatINR(orderData.discount)}</dd>
+              </div>
+            )}
+            <div className="flex items-baseline justify-between border-t border-line pt-3">
+              <dt className="font-semibold text-ink">Total</dt>
+              <dd className="text-xl font-bold text-ink">{formatINR(orderData.total)}</dd>
+            </div>
+          </dl>
+        </section>
 
-          {/* Thank You Message */}
-          <div className="text-center mt-8 p-4 bg-blue-50 rounded-xl">
-            <p className="text-gray-700 font-semibold">
-              Thank you for shopping with ElectroDash! ⚡
-            </p>
-            <p className="text-sm text-gray-600 mt-2">
-              Your order will be delivered within 20-30 minutes
-            </p>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          <button
-            onClick={handleDownloadReceipt}
-            className="flex-1 bg-[#5A8DEE] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#4A7DDE] transition flex items-center justify-center gap-2"
-          >
-            <Download size={24} />
-            Download Receipt
-          </button>
-          <button
-            onClick={handleGoHome}
-            className="flex-1 bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white py-4 rounded-xl font-bold text-lg hover:shadow-xl transition flex items-center justify-center gap-2"
-          >
-            <Home size={24} />
-            Go to Home
+        <div className="mt-6 flex justify-center">
+          <button onClick={handleGoHome} className="btn btn-ghost">
+            <Home size={18} /> Back to shopping
           </button>
         </div>
+      </Page>
+    </div>
+  );
+}
+
+function Detail({ icon: Icon, label, value }) {
+  return (
+    <div className="flex gap-3">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">
+        <Icon size={18} />
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-muted">{label}</p>
+        <p className="mt-0.5 text-sm font-semibold leading-snug text-ink">{value}</p>
       </div>
     </div>
   );

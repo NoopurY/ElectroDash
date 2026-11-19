@@ -3,8 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
-  ShoppingCart,
   CreditCard,
   Wallet,
   Banknote,
@@ -13,9 +11,9 @@ import {
   Store,
   Package,
   MapPin,
-  Phone,
   X,
 } from "lucide-react";
+import { AppHeader, Field, Page, PageTitle, formatINR } from "@/components/ui";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -24,6 +22,7 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [discount, setDiscount] = useState(0);
+  const [couponError, setCouponError] = useState("");
   const [address, setAddress] = useState({
     name: "",
     phone: "",
@@ -124,7 +123,7 @@ export default function CheckoutPage() {
         ...coupon,
       });
     } else {
-      alert("Invalid coupon code");
+      setCouponError("That coupon code is not valid");
     }
   };
 
@@ -202,329 +201,277 @@ export default function CheckoutPage() {
     { id: "cod", name: "Cash on Delivery", icon: Banknote },
   ];
 
+  const itemCount = cart.reduce((n, i) => n + i.quantity, 0);
+  const addressOk = isAddressValid();
+
+  const SectionHeader = ({ step, icon: Icon, title, done }) => (
+    <div className="mb-5 flex items-center gap-3">
+      <span
+        className={`grid h-8 w-8 place-items-center rounded-full text-sm font-bold ${
+          done ? "bg-green-600 text-white" : "bg-brand-50 text-brand-700"
+        }`}
+      >
+        {done ? <CheckCircle size={16} /> : step}
+      </span>
+      <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+        <Icon size={18} className="text-muted" /> {title}
+      </h2>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center font-sans pb-10">
-      {/* Header */}
-      <header className="w-full bg-[#5A8DEE] text-white px-5 py-4 rounded-b-3xl shadow-md">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleBack}
-            className="hover:bg-white/20 rounded-full p-2 transition"
-          >
-            <ArrowLeft size={24} />
-          </button>
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold flex items-center gap-2">
-              <ShoppingCart size={24} />
-              Checkout
-            </h1>
-            <p className="text-sm opacity-90">Review and place your order</p>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-surface">
+      <AppHeader role="user" cartCount={itemCount} />
+      <Page>
+        <PageTitle back="/user/cart" title="Checkout" subtitle="Add your address, choose how to pay, and place your order." />
 
-      <div className="w-full max-w-4xl px-5 mt-6 flex flex-col lg:flex-row gap-6">
-        {/* Left Column - Order Details */}
-        <div className="flex-1 space-y-6">
-          {/* Order Summary */}
-          <div className="bg-white rounded-2xl shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Package size={20} />
-              Order Summary
-            </h2>
-
-            {Object.entries(groupedCart).map(([shopName, items]) => (
-              <div key={shopName} className="mb-6 last:mb-0">
-                {/* Shop Header */}
-                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
-                  <Store size={16} className="text-gray-500" />
-                  <span className="text-sm font-semibold text-gray-500">
-                    {shopName}
-                  </span>
-                </div>
-
-                {/* Items */}
-                <div className="space-y-3">
-                  {items.map((item) => (
-                    <div key={`${item.id}_${item.shopName}`} className="flex items-center gap-4">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-16 h-16 object-contain rounded-lg border border-gray-200"
-                      />
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-sm text-gray-800">
-                          {item.name}
-                        </h3>
-                        <p className="text-xs text-gray-600">{item.specs}</p>
-                        <p className="text-xs text-gray-500">
-                          Qty: {item.quantity}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-[#5A8DEE]">
-                          ₹{item.price * item.quantity}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Delivery Address */}
-          <div className="bg-white rounded-2xl shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <MapPin size={20} />
-              Delivery Address
-            </h2>
-            <div className="space-y-4">
-              {/* Name and Phone */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
+        <div className="grid items-start gap-6 lg:grid-cols-[1fr_380px]">
+          <div className="space-y-5">
+            {/* Delivery Address */}
+            <section className="card p-5 sm:p-6">
+              <SectionHeader step={1} icon={MapPin} title="Delivery address" done={addressOk} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Full name" htmlFor="co-name">
                   <input
+                    id="co-name"
                     type="text"
-                    placeholder="Enter your full name"
+                    autoComplete="name"
+                    placeholder="Your full name"
                     value={address.name}
                     onChange={(e) => handleAddressChange("name", e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#5A8DEE] outline-none"
+                    className="input"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Phone Number <span className="text-red-500">*</span>
-                  </label>
+                </Field>
+                <Field label="Phone number" htmlFor="co-phone">
                   <input
+                    id="co-phone"
                     type="tel"
+                    autoComplete="tel"
                     placeholder="10-digit mobile number"
                     value={address.phone}
                     onChange={(e) => handleAddressChange("phone", e.target.value)}
                     maxLength={10}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#5A8DEE] outline-none"
+                    className="input"
                   />
+                </Field>
+                <div className="sm:col-span-2">
+                  <Field label="Address line 1" htmlFor="co-a1">
+                    <input
+                      id="co-a1"
+                      type="text"
+                      autoComplete="address-line1"
+                      placeholder="Flat / house no., building"
+                      value={address.addressLine1}
+                      onChange={(e) => handleAddressChange("addressLine1", e.target.value)}
+                      className="input"
+                    />
+                  </Field>
                 </div>
-              </div>
-
-              {/* Address Line 1 */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Address Line 1 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="House No., Building Name"
-                  value={address.addressLine1}
-                  onChange={(e) => handleAddressChange("addressLine1", e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#5A8DEE] outline-none"
-                />
-              </div>
-
-              {/* Address Line 2 */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Address Line 2 <span className="text-gray-400">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Road Name, Area, Colony"
-                  value={address.addressLine2}
-                  onChange={(e) => handleAddressChange("addressLine2", e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#5A8DEE] outline-none"
-                />
-              </div>
-
-              {/* City and Pincode */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    City <span className="text-red-500">*</span>
-                  </label>
+                <div className="sm:col-span-2">
+                  <Field label="Address line 2 (optional)" htmlFor="co-a2">
+                    <input
+                      id="co-a2"
+                      type="text"
+                      autoComplete="address-line2"
+                      placeholder="Road, area, landmark"
+                      value={address.addressLine2}
+                      onChange={(e) => handleAddressChange("addressLine2", e.target.value)}
+                      className="input"
+                    />
+                  </Field>
+                </div>
+                <Field label="City" htmlFor="co-city">
                   <input
+                    id="co-city"
                     type="text"
-                    placeholder="Enter city"
+                    autoComplete="address-level2"
+                    placeholder="City"
                     value={address.city}
                     onChange={(e) => handleAddressChange("city", e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#5A8DEE] outline-none"
+                    className="input"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Pincode <span className="text-red-500">*</span>
-                  </label>
+                </Field>
+                <Field
+                  label="Pincode"
+                  htmlFor="co-pin"
+                  error={address.pincode && address.pincode.length !== 6 ? "Pincode must be 6 digits" : ""}
+                >
                   <input
+                    id="co-pin"
                     type="text"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
                     placeholder="6-digit pincode"
                     value={address.pincode}
-                    onChange={(e) => handleAddressChange("pincode", e.target.value)}
+                    onChange={(e) => handleAddressChange("pincode", e.target.value.replace(/\D/g, ""))}
                     maxLength={6}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-[#5A8DEE] outline-none"
+                    className={`input ${address.pincode && address.pincode.length !== 6 ? "input-error" : ""}`}
                   />
-                </div>
+                </Field>
               </div>
-            </div>
-          </div>
+            </section>
 
-          {/* Payment Method */}
-          <div className="bg-white rounded-2xl shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <CreditCard size={20} />
-              Payment Method
-            </h2>
-            <div className="space-y-3">
-              {paymentMethods.map((method) => {
-                const Icon = method.icon;
-                return (
-                  <button
-                    key={method.id}
-                    onClick={() => setSelectedPayment(method.id)}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition ${
-                      selectedPayment === method.id
-                        ? "border-[#5A8DEE] bg-blue-50"
-                        : "border-gray-200 hover:border-[#5A8DEE] hover:bg-gray-50"
-                    }`}
-                  >
-                    <Icon
-                      size={24}
-                      className={
-                        selectedPayment === method.id
-                          ? "text-[#5A8DEE]"
-                          : "text-gray-500"
-                      }
-                    />
-                    <span
-                      className={`font-semibold text-sm ${
-                        selectedPayment === method.id
-                          ? "text-[#5A8DEE]"
-                          : "text-gray-700"
+            {/* Payment Method */}
+            <section className="card p-5 sm:p-6">
+              <SectionHeader step={2} icon={CreditCard} title="Payment method" done={!!selectedPayment} />
+              <div className="grid gap-3 sm:grid-cols-3">
+                {paymentMethods.map((method) => {
+                  const Icon = method.icon;
+                  const active = selectedPayment === method.id;
+                  return (
+                    <button
+                      key={method.id}
+                      onClick={() => setSelectedPayment(method.id)}
+                      aria-pressed={active}
+                      className={`relative flex flex-col items-start gap-3 rounded-2xl border p-4 text-left transition ${
+                        active
+                          ? "border-brand-500 bg-brand-50 ring-4 ring-brand-500/10"
+                          : "border-line bg-white hover:border-slate-300"
                       }`}
                     >
-                      {method.name}
-                    </span>
-                    {selectedPayment === method.id && (
-                      <CheckCircle
-                        size={20}
-                        className="ml-auto text-[#5A8DEE]"
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+                      <span
+                        className={`grid h-10 w-10 place-items-center rounded-xl ${
+                          active ? "bg-brand-600 text-white" : "bg-surface text-ink-soft"
+                        }`}
+                      >
+                        <Icon size={20} />
+                      </span>
+                      <span className={`text-sm font-semibold ${active ? "text-brand-700" : "text-ink"}`}>
+                        {method.name}
+                      </span>
+                      {active && <CheckCircle size={18} className="absolute right-3 top-3 text-brand-600" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
 
-        {/* Right Column - Price Details */}
-        <div className="lg:w-96 w-full">
-          <div className="bg-white rounded-2xl shadow-md p-6 lg:sticky lg:top-6">
-            {/* Coupon Section */}
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <Tag size={18} />
-                Apply Coupon
-              </h3>
-              {!appliedCoupon ? (
-                <div className="flex gap-2">
+            {/* Items */}
+            <section className="card p-5 sm:p-6">
+              <SectionHeader step={3} icon={Package} title={`Review items (${itemCount})`} />
+              <div className="space-y-5">
+                {Object.entries(groupedCart).map(([shopName, items]) => (
+                  <div key={shopName}>
+                    <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+                      <Store size={14} /> {shopName}
+                    </p>
+                    <ul className="space-y-3">
+                      {items.map((item) => (
+                        <li key={`${item.id}_${item.shopName}`} className="flex items-center gap-4">
+                          <img src={item.image} alt={item.name} className="h-14 w-14 rounded-xl bg-surface object-cover" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
+                            <p className="text-xs text-muted">
+                              {item.quantity} × {formatINR(item.price)}
+                            </p>
+                          </div>
+                          <p className="text-sm font-semibold text-ink">{formatINR(item.price * item.quantity)}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          {/* Price Details */}
+          <aside className="card p-5 sm:p-6 lg:sticky lg:top-24">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <Tag size={16} className="text-muted" /> Coupon
+            </h3>
+            {!appliedCoupon ? (
+              <>
+                <div className="mt-3 flex gap-2">
                   <input
                     type="text"
-                    placeholder="Enter coupon code"
+                    placeholder="Enter code"
                     value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-[#5A8DEE] outline-none text-sm"
+                    onChange={(e) => {
+                      setCouponCode(e.target.value.toUpperCase());
+                      setCouponError("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                    className={`input h-10 flex-1 uppercase placeholder:normal-case ${couponError ? "input-error" : ""}`}
+                    aria-label="Coupon code"
                   />
-                  <button
-                    onClick={handleApplyCoupon}
-                    className="bg-[#5A8DEE] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#4A7DDE] transition text-sm"
-                  >
+                  <button onClick={handleApplyCoupon} className="btn btn-secondary">
                     Apply
                   </button>
                 </div>
-              ) : (
-                <div className="bg-green-50 border-2 border-green-500 rounded-lg p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Tag size={16} className="text-green-600" />
-                    <div>
-                      <p className="font-semibold text-green-800 text-sm">
-                        {appliedCoupon.code}
-                      </p>
-                      <p className="text-xs text-green-600">
-                        {appliedCoupon.type === "percentage"
-                          ? `${appliedCoupon.discount}% off`
-                          : `₹${appliedCoupon.discount} off`}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleRemoveCoupon}
-                    className="text-red-500 hover:text-red-700 transition"
-                  >
-                    <X size={18} />
-                  </button>
+                {couponError && <p className="mt-1.5 text-xs font-medium text-red-600">{couponError}</p>}
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {[
+                    ["SAVE10", "10% off"],
+                    ["FLAT50", "₹50 off"],
+                    ["FIRST100", "₹100 off"],
+                  ].map(([code, label]) => (
+                    <button
+                      key={code}
+                      onClick={() => {
+                        setCouponCode(code);
+                        setCouponError("");
+                      }}
+                      className="rounded-lg border border-dashed border-brand-300 bg-brand-50/60 px-2.5 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-50"
+                      title={label}
+                    >
+                      {code} · <span className="font-medium">{label}</span>
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
-
-            <hr className="mb-4" />
-
-            {/* Price Breakdown */}
-            <h3 className="text-lg font-bold text-gray-800 mb-4">
-              Price Details
-            </h3>
-            <div className="space-y-3 mb-4">
-              <div className="flex justify-between text-gray-700">
-                <span>Subtotal ({cart.length} items)</span>
-                <span>₹{calculateSubtotal()}</span>
+              </>
+            ) : (
+              <div className="mt-3 flex items-center justify-between rounded-xl border border-green-200 bg-green-50 px-3.5 py-2.5">
+                <div>
+                  <p className="text-sm font-semibold text-green-800">{appliedCoupon.code} applied</p>
+                  <p className="text-xs text-green-700">
+                    {appliedCoupon.type === "percentage"
+                      ? `${appliedCoupon.discount}% off`
+                      : `₹${appliedCoupon.discount} off`}
+                  </p>
+                </div>
+                <button onClick={handleRemoveCoupon} className="btn btn-ghost btn-sm btn-icon text-green-800" aria-label="Remove coupon">
+                  <X size={16} />
+                </button>
               </div>
-              <div className="flex justify-between text-gray-700">
-                <span>Delivery Fee</span>
-                <span>₹{calculateDeliveryFee()}</span>
+            )}
+
+            <dl className="mt-6 space-y-2.5 border-t border-line pt-5 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-muted">Subtotal ({itemCount} items)</dt>
+                <dd className="font-medium text-ink">{formatINR(calculateSubtotal())}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Delivery fee</dt>
+                <dd className="font-medium text-ink">{formatINR(calculateDeliveryFee())}</dd>
               </div>
               {discount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Discount</span>
-                  <span>-₹{discount}</span>
+                <div className="flex justify-between text-green-700">
+                  <dt>Discount</dt>
+                  <dd className="font-medium">−{formatINR(discount)}</dd>
                 </div>
               )}
-            </div>
-
-            <hr className="mb-4" />
-
-            <div className="flex justify-between text-xl font-bold text-gray-800 mb-6">
-              <span>Total Amount</span>
-              <span className="text-[#5A8DEE]">₹{calculateTotal()}</span>
+            </dl>
+            <div className="mt-4 flex items-baseline justify-between border-t border-line pt-4">
+              <span className="font-semibold text-ink">Total</span>
+              <span className="text-2xl font-bold tracking-tight text-ink">{formatINR(calculateTotal())}</span>
             </div>
 
             <button
               onClick={handlePlaceOrder}
-              disabled={!selectedPayment || !isAddressValid()}
-              className="w-full bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white py-4 rounded-xl font-bold text-lg hover:shadow-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!selectedPayment || !addressOk}
+              className="btn btn-primary btn-lg mt-5 w-full"
             >
-              Place Order
+              Place order · {formatINR(calculateTotal())}
             </button>
-
-            {!isAddressValid() && (
-              <p className="text-xs text-red-500 text-center mt-2">
-                Please fill in all required address fields
+            {(!addressOk || !selectedPayment) && (
+              <p className="mt-2 text-center text-xs text-muted">
+                {!addressOk ? "Fill in your delivery address to continue" : "Choose a payment method to continue"}
               </p>
             )}
-
-            {/* Available Coupons */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-xs font-semibold text-gray-600 mb-2">
-                Available Coupons:
-              </p>
-              <div className="space-y-1 text-xs text-gray-500">
-                <p>• SAVE10 - 10% off</p>
-                <p>• FLAT50 - ₹50 off</p>
-                <p>• FIRST100 - ₹100 off</p>
-              </div>
-            </div>
-          </div>
+          </aside>
         </div>
-      </div>
+      </Page>
     </div>
   );
 }

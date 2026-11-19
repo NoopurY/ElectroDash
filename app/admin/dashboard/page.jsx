@@ -2,7 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Store, Package, CheckCircle, Clock, XCircle, Truck, User, LogOut, TrendingUp, AlertCircle, Search, RefreshCw } from "lucide-react";
+import { Package, CheckCircle, Clock, XCircle, Truck, User, TrendingUp, Search, RefreshCw, MapPin } from "lucide-react";
+import {
+  AppHeader,
+  EmptyState,
+  Page,
+  PageLoader,
+  PageTitle,
+  StatCard,
+  StatusBadge,
+  formatINR,
+} from "@/components/ui";
 
 export default function VendorDashboard() {
   const router = useRouter();
@@ -31,16 +41,12 @@ export default function VendorDashboard() {
 
   const fetchOrders = async (userData) => {
     setLoading(true);
-    console.log("Fetching orders for vendor:", userData._id || userData.id);
-    console.log("Vendor shop name:", userData.shopName);
     try {
       const response = await fetch(`/api/orders/vendor?vendorId=${userData._id || userData.id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      console.log("Response status:", response.status);
       if (response.ok) {
         const data = await response.json();
-        console.log("Fetched orders:", data.orders);
         setOrders(data.orders || []);
       } else {
         const errorData = await response.json();
@@ -138,52 +144,202 @@ export default function VendorDashboard() {
     totalRevenue: orders.filter((o) => o.status === "Delivered").reduce((sum, o) => sum + o.totalAmount, 0),
   };
 
+  const OUT_FOR_DELIVERY = ["Assigned", "Picked Up", "On the Way"];
+  const FILTERS = [
+    ["Pending", "New"],
+    ["Accepted", "Accepted"],
+    ["Preparing", "Preparing"],
+    ["Ready", "Ready"],
+    ["Out", "Out for delivery"],
+    ["Delivered", "Delivered"],
+    ["All", "All"],
+  ];
+  const countFor = (key) =>
+    key === "All"
+      ? orders.length
+      : key === "Out"
+      ? orders.filter((o) => OUT_FOR_DELIVERY.includes(o.status)).length
+      : orders.filter((o) => o.status === key).length;
+
+  const visible = orders.filter((order) => {
+    const matchesFilter =
+      filter === "All" || (filter === "Out" ? OUT_FOR_DELIVERY.includes(order.status) : order.status === filter);
+    const q = searchTerm.toLowerCase();
+    const matchesSearch =
+      q === "" || order.orderId.toLowerCase().includes(q) || order.userName?.toLowerCase().includes(q);
+    return matchesFilter && matchesSearch;
+  });
+
+  const timeAgo = (d) => {
+    if (!d) return "";
+    const mins = Math.round((Date.now() - new Date(d).getTime()) / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins} min ago`;
+    const h = Math.round(mins / 60);
+    if (h < 24) return `${h} h ago`;
+    return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  };
+
   if (!user) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-xl text-[#5A8DEE]">Loading...</div></div>;
+    return (
+      <div className="min-h-screen bg-surface">
+        <AppHeader role="admin" />
+        <PageLoader />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <Store size={32} />
-              <div>
-                <h1 className="text-2xl font-bold">{user.shopName || "Vendor Dashboard"}</h1>
-                <p className="text-sm text-white/80">Manage your orders</p>
-              </div>
+    <div className="min-h-screen bg-surface">
+      <AppHeader role="admin" onLogout={handleLogout} />
+      <Page>
+        <PageTitle
+          title={user.shopName || "Your shop"}
+          subtitle="Accept new orders, prepare them, and hand them to a delivery partner."
+          actions={
+            <button onClick={handleRefresh} className="btn btn-secondary" disabled={refreshing}>
+              <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} /> Refresh
+            </button>
+          }
+        />
+
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <StatCard label="New orders" value={stats.pending} icon={Clock} tone="amber" hint={stats.pending ? "Waiting for you" : "All caught up"} />
+          <StatCard label="In progress" value={stats.active} icon={Package} />
+          <StatCard label="Delivered" value={stats.completed} icon={CheckCircle} tone="green" />
+          <StatCard label="Revenue" value={formatINR(stats.totalRevenue)} icon={TrendingUp} tone="violet" hint="From delivered orders" />
+        </div>
+
+        <div className="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="scrollbar-none -mx-4 flex gap-1.5 overflow-x-auto px-4 lg:mx-0 lg:px-0">
+            {FILTERS.map(([key, label]) => {
+              const n = countFor(key);
+              const active = filter === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition ${
+                    active ? "border-ink bg-ink text-white" : "border-line bg-white text-ink-soft hover:border-slate-300"
+                  }`}
+                >
+                  {label}
+                  <span
+                    className={`rounded-full px-1.5 text-xs font-semibold tabular-nums ${
+                      active ? "bg-white/20" : key === "Pending" && n > 0 ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-muted"
+                    }`}
+                  >
+                    {n}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="relative lg:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={17} />
+            <input
+              type="search"
+              placeholder="Search order ID or customer"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input h-10 pl-9 text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          {loading ? (
+            <PageLoader label="Loading orders…" />
+          ) : visible.length === 0 ? (
+            <EmptyState
+              icon={filter === "Pending" ? CheckCircle : Package}
+              title={filter === "Pending" ? "No new orders right now" : "No orders here"}
+              text={
+                filter === "Pending"
+                  ? "New orders from customers will show up here. Use Refresh to check again."
+                  : "Try a different filter or search."
+              }
+            />
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {visible.map((order) => (
+                <article key={order._id} className="card flex flex-col p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-mono text-sm font-semibold text-ink">#{order.orderId}</p>
+                      <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted">
+                        <User size={14} /> {order.userName || order.userEmail}
+                        <span aria-hidden>·</span>
+                        {timeAgo(order.placedAt || order.createdAt)}
+                      </p>
+                    </div>
+                    <StatusBadge status={order.status} />
+                  </div>
+
+                  <ul className="mt-4 space-y-1.5 rounded-xl bg-surface px-3.5 py-3 text-sm">
+                    {(order.items || []).map((item, i) => (
+                      <li key={i} className="flex justify-between gap-3">
+                        <span className="truncate text-ink-soft">
+                          <span className="font-semibold text-ink">{item.quantity}×</span> {item.name}
+                        </span>
+                        <span className="shrink-0 tabular-nums text-muted">{formatINR(item.price * item.quantity)}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                    {order.deliveryAddress?.city && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={13} /> {order.deliveryAddress.street?.split(",").slice(-1)[0]?.trim() || order.deliveryAddress.city}
+                      </span>
+                    )}
+                    <span>{order.paymentMethod}</span>
+                    {order.deliveryPartnerName && (
+                      <span className="inline-flex items-center gap-1 font-medium text-indigo-700">
+                        <Truck size={13} /> {order.deliveryPartnerName}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 mt-4">
+                    <p className="text-lg font-bold text-ink">{formatINR(order.totalAmount)}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {order.status === "Pending" && (
+                        <>
+                          <button onClick={() => handleRejectOrder(order._id)} className="btn btn-danger btn-sm">
+                            <XCircle size={15} /> Reject
+                          </button>
+                          <button onClick={() => handleAcceptOrder(order._id)} className="btn btn-success btn-sm">
+                            <CheckCircle size={15} /> Accept
+                          </button>
+                        </>
+                      )}
+                      {order.status === "Accepted" && (
+                        <button onClick={() => handleUpdateStatus(order._id, "Preparing")} className="btn btn-primary btn-sm">
+                          <Package size={15} /> Start preparing
+                        </button>
+                      )}
+                      {order.status === "Preparing" && (
+                        <button onClick={() => handleUpdateStatus(order._id, "Ready")} className="btn btn-primary btn-sm">
+                          <CheckCircle size={15} /> Mark ready
+                        </button>
+                      )}
+                      {order.status === "Ready" && !order.deliveryPartnerId && (
+                        <button onClick={() => handleAssignDelivery(order._id)} className="btn btn-accent btn-sm">
+                          <Truck size={15} /> Assign delivery
+                        </button>
+                      )}
+                      {OUT_FOR_DELIVERY.includes(order.status) && (
+                        <span className="text-xs font-medium text-muted">With delivery partner</span>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
-            <div className="flex items-center gap-3">
-              <button onClick={handleRefresh} className={`p-2 bg-white/20 hover:bg-white/30 rounded-lg transition ${refreshing ? 'animate-spin' : ''}`} title="Refresh"><RefreshCw size={20} /></button>
-              <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition"><LogOut size={20} /><span className="hidden sm:inline">Logout</span></button>
-            </div>
-          </div>
+          )}
         </div>
-      </header>
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-yellow-500">
-            <div className="flex items-center justify-between"><div><p className="text-sm text-gray-600">Pending Orders</p><p className="text-3xl font-bold text-gray-800">{stats.pending}</p></div><Clock size={40} className="text-yellow-500" /></div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
-            <div className="flex items-center justify-between"><div><p className="text-sm text-gray-600">Active Orders</p><p className="text-3xl font-bold text-gray-800">{stats.active}</p></div><Package size={40} className="text-blue-500" /></div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500">
-            <div className="flex items-center justify-between"><div><p className="text-sm text-gray-600">Completed</p><p className="text-3xl font-bold text-gray-800">{stats.completed}</p></div><CheckCircle size={40} className="text-green-500" /></div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-purple-500">
-            <div className="flex items-center justify-between"><div><p className="text-sm text-gray-600">Total Revenue</p><p className="text-3xl font-bold text-gray-800">₹{stats.totalRevenue}</p></div><TrendingUp size={40} className="text-purple-500" /></div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl shadow-md mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} /><input type="text" placeholder="Search by Order ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:border-[#5A8DEE] focus:outline-none" /></div>
-            <div className="flex gap-2 flex-wrap">{["All", "Pending", "Accepted", "Preparing", "Ready", "Delivered"].map((status) => (<button key={status} onClick={() => setFilter(status)} className={`px-4 py-2 rounded-lg font-medium transition ${filter === status ? 'bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{status}</button>))}</div>
-          </div>
-        </div>
-        {loading ? (<div className="text-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5A8DEE] mx-auto"></div><p className="mt-4 text-gray-600">Loading orders...</p></div>) : getFilteredOrders().length === 0 ? (<div className="bg-white p-12 rounded-xl shadow-md text-center"><AlertCircle size={48} className="mx-auto text-gray-400 mb-4" /><p className="text-xl text-gray-600">No orders found</p></div>) : (<div className="space-y-4">{getFilteredOrders().map((order) => (<div key={order._id} className="bg-white rounded-xl shadow-md p-6"><div className="flex justify-between mb-4"><div><h3 className="text-xl font-bold text-gray-800">Order #{order.orderId}</h3><p className="text-sm text-gray-600 flex items-center gap-1"><User size={14} />{order.userName || order.userEmail}</p></div><div className="text-right"><span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold border-2 ${getStatusColor(order.status)}`}>{order.status}</span><p className="text-2xl font-bold text-gray-800 mt-2">₹{order.totalAmount}</p></div></div><div className="flex gap-2">{order.status === "Pending" && (<><button onClick={() => handleAcceptOrder(order._id)} className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium"><CheckCircle size={18} />Accept</button><button onClick={() => handleRejectOrder(order._id)} className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium"><XCircle size={18} />Reject</button></>)}{order.status === "Accepted" && (<button onClick={() => handleUpdateStatus(order._id, "Preparing")} className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium"><Package size={18} />Mark Preparing</button>)}{order.status === "Preparing" && (<button onClick={() => handleUpdateStatus(order._id, "Ready")} className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium"><CheckCircle size={18} />Mark Ready</button>)}{order.status === "Ready" && !order.deliveryPartnerId && (<button onClick={() => handleAssignDelivery(order._id)} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#5A8DEE] to-[#40E0D0] text-white rounded-lg font-medium"><Truck size={18} />Assign Delivery</button>)}</div></div>))}</div>)}
-      </main>
+      </Page>
     </div>
   );
 }
